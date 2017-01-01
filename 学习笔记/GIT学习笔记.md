@@ -60,6 +60,9 @@
 
 	+ clone
 		+ git clone https://github.com/dasuimao/StudyNote.git 克隆一份远程仓库的拷贝到本地
+	
+	+ pull 
+		+ git pull origin master 获取远程端最新的代码
 
 + 过滤器
 	+ 忽略文件夹
