@@ -1,0 +1,937 @@
+#Linux学习笔记
+
+#
+*作者：SY*
+*2016-8-28 10:13:13*
+##
+
++ 学习步骤
+	+ 基础知识：Linux常用命令 + 汇编 + Makefile + DNW + MiniCOM + SSH + VIM + 交叉编译器+连接脚本
+	+ 裸机程序
+	+ 移植U-boot
+	+ 移植内核
+	+ 移植根文件系统
+	+ 移植网络文件系统
+	+ 设备驱动
+
++ Linux文件目录
+	+ 目录树
+		opt：安装软件的目录
+
++ 命令集
+	+ Linux-Ubuntu
+		+ 切换用户
+			+ 重置root密码：
+				1. 输入 "sudo passwd root"
+				2. 输入密码
+		
+			+ 切换为root用户
+				1. 输入 "su root" 或者 输入 "su"
+				2. 输入密码
+			
+			+ 切换为一般用户
+				1. 输入 "su sy(用户名)"
+		
+		+ 软件
+			+ 安装：输入"apt-get install + 软件名"
+			+ 卸载：输入“apt-get purge + 软件名”
+		
+		+ 文件夹
+			+ 新建文件夹
+				1. 输入"mkdir + 名称"
+			
+			+ 删除空文件夹
+				1. 输入"rmdir + 名称"
+			
+			+ 删除文件夹
+				1. 输入"rm -rf + 名称"。 -r代表递归删除; -f代表不提示，强制删除;
+			
+		+ 文件
+			+ 新建文件
+				1. 输入"touch + 名称"
+			
+			+ 删除文件
+				1. 输入"rm -rf + 名称"。 -r代表递归删除; -f代表不提示，强制删除;
+		
+		+ 解压缩
+			+ 参数
+				1. "z"：使用gzip处理
+				2. "j"：使用bzip2处理
+				3. "c"：压缩
+				4. "x"：解压缩
+				5. "f"：表示文件
+			
+			+ gzip
+				1. 压缩文件：zcf
+					格式：tar [参数] 目标文件 源文件
+					例程：tar zcf xxx.tar.gz xxx.txt 	压缩文件
+						  tar zcf xxx.tar.gz xxx/		压缩文件夹
+				2. 解压缩文件：zxf
+					格式：tar [参数] 源文件 目标文件
+					例程：tar zxf xxx.tar.gz 			解压缩文件到当前目录
+						  tar zxf xxx.tar.gz -C ../		解压缩到上层目录
+			+ bzip2压缩率更高，速度更慢. 
+				1. 压缩文件：-jcvf
+				2. 解压缩文件：-jxvf
+			
+			+ zip
+				1. 压缩文件
+					zip 目标文件名 源文件名
+				2. 解压缩文件
+					unzip 源文件名
+				
+		+ 增加用户
+			+ 新建用户
+				1. useradd + [用户名]
+				2. 新建用户并加入组 useradd + [-g] + [group] + [username]
+				
+			+ 增加密码
+				1. passwd + [用户名]
+			
+			+ 删除用户
+				1. userdel + [用户名]
+			
+			+ 增加组
+				1. groupadd
+			
+			+ 删除组
+				1. groupdel
+			
+			+ 给已有用户增加工作组
+				1. usermod -G + [group] + [username]
+			
+			+ 从组中删除用户
+				1. gpasswd -d + [username] + [group]
+			
+		+ 查看文件内容
+			+ cat + [parameter] + filename
+				1. -n：附加行号
+			
+			+ more + 文件名
+				1. 按下“空格键”可以快速跳转到下一页。
+			
+			+ 逆序查看内容：tac + 文件名
+			
+			+ head + [OPTION] + [FILE]
+				1. 查看前x行内容：head -nx file.txt
+			
+			+ tail + [OPTION] + [FILE]
+				1. 查看倒数x行内容：tail -nx file.txt
+			
+		+ dpkg	
+			+ -l：显示所有已安装的软件
+			+ -P：删除一个软件包，包括配置信息
+			
+		+ 查看内核版本
+			+ uname -r
+			
+		+ 查看发行版本
+			+ cat /etc/issue
+		
+			+ 打印开机信息
+				1. dmesg
+		
+		+ 驱动模块
+			+ 显示模块：lsmod
+			+ 加载模块：insmod
+			+ 卸载模块：rmmod
+		
+		+ 串口/USB有效端口
+			+ 查询串口信息：dmesg | grep tty
+		
+		+ 添加环境变量
+			+ 输入"sudo vim /etc/profile"
+			+ 在文件末尾添加："export PATH=$PATH:/opt/FriendlyARM/toolschain/4.5.1/bin“
+			+ 使环境变量立即生效："source /etc/profile"
+			
+		+ cp 
+			+ cp + 源文件 + 目标文件：拷贝源文件到目标文件
+			+ cp -R 源目录 + 目标目录：拷贝源目录到目标目录
+		
+		+ man
+			描述：相当于帮助功能
+				man的级别：
+				1 ： 查看命令的帮助
+				2 ： 查看可被内核调用的函数的帮助
+				3 ： 查看函数和函数库的帮助
+				4 ： 查看文件的帮助主要是/dev目录下的文件. 
+				5 ： 查看配置文件的帮助
+				6 ： 查看游戏的帮助
+				7 ： 查看其它杂项的帮助
+				8 ： 查看系统管理员可用命令的帮助
+				9 ： 查看和内核相关文件的帮助
+			用法：man + <level> + 关键字，其中级别省略表示级别1
+			例程：man 3 open，查看open函数的用法。
+		
+		+ 清屏
+			+ clear
+			+ Ctrl + l
+		
+		+ mount挂载 / umount卸载
+			+ 假如你有一张SD卡，显示为/dev/sdb1，想要打开SD卡查看里面的文件。(/mnt目录一般作为挂载目录)
+				1. 在/mnt目录新建文件夹sdcard。执行命令：mount /dev/sdb1 /mnt/sdcard，这样就可以在该目录中打开SD卡。
+					其中文件夹 sdcard 称作挂载点。
+				2. 查看所有挂载设备：df -h
+				3. 如果想要卸载设备，通过 umount /dev/sdb1 取消挂载。
+				4. 卸载提示“device is busy"，可能是你当前处于挂载点内部，需要离开挂载目录，重新执行umount。
+			
+		+ 查找内容
+			+ find
+				1. 用法：find + [path] + [-option] + [parameter]
+				2. 例程：find /etc -name *.local
+			
+			+ grep
+				1. 查找文本文件中包含某个字符的语句
+					用法：grep + [关键字] + [文件名]
+		
+		+ 链接
+			+ 硬链接：ln + 源文件 + 链接文件
+				1. 相当于拷贝一份源文件，并在两者之间建立链接
+			
+			+ 软链接：ln + [-s] + 源文件 + 链接文件
+				1. 使用ls -l 查看文件格式时，前面显示l表示链接
+				2. 相当于快捷方式
+			
+			+ 硬链接与软链接之间的区别
+				1. 如果删除源文件，硬链接仍然存在，软链接将失效。
+			
+		+ 修改文件权限
+			+ chmod 
+				1. r：读 w：写 x：执行 -：无权限
+				2. 增加权限：
+					chmod + [+x] + [filename]
+				3. 减少权限：
+					chmod + [-x] + [filename]
+				4. 增加所有者权限
+					chmod + [u+x] + [filename]
+				
+				5. 另一种方式：
+					chmod + 755 + [filename]
+			
+		+ 修改所有者
+			+ chown
+				1. chown + [username] + [filename]	
+			
+		+ 管道
+			格式：命令1 | 命令2  ... | 命令n
+			解释：将上一个命令执行结果交给下一个命令执行
+			+ 连接符：|
+				例程：ls -R /etc | more 通过|符号，可以连接两个操作，分页打印文件。
+			
+		+ 字符转换
+			格式：col [-option]
+			
+		+ 重定向
+			+ `>` ：表示定向输出到文件
+			+ `>>`：表示追加内容到文件		
+			
+		+ 计算字数
+			+ wc + filename
+			
+		+ 群发通知
+			+ wall + 内容
+			+ wall + `cmd`：表示将cmd执行的结果通知所有人
+				
+		+ 重定向输出
+			+ ls > cmd.txt：表示将所有的文件名存储到cmd.txt文件中。
+			+ ls >> cmd.txt：表示追加命令执行结果到cmd.txt
+		
+		+ 重定向输入
+			+ wall < cmd.txt：表示从cmd.txt读取数据并群发消息。		
+	
++ Linux-fedora
+	+ 安装软件
+		1. 输入"yum install + 软件名"
+	
+	+ 防火墙
+		+ 关闭防火墙
+			1. sudo systemctl stop firewalld.service
+			2. sudo systemctl disable firewalld.service
+			3. setenforce 0
+		+ 永久关闭防火墙
+			1. 进入/etc/selinux/config 把SELINUX=enforce   改成disabled就可以了，重启电脑，永久生效
+		
+	+ 查看发行版本
+		1. lsb_release -a
+		
+	+ 查看已安装的内核
+		1. rpm -qa | grep kernel	
+		
+	+ 删除内核移除启动项. 
+		1. yum remove kernel-PAE-2.6.32.11-99.fc12.i686
+		
+	+ 缺少某个库文件时，反向查找依赖库
+		1. yum whatprovides + 缺少的库
+			例如：yum whatprovides libz.so.1
+
++ Makefile
+	简介：Makefile可以打包处理程序，包括：编译、连接。
+	+ 规则
+		1 格式
+			目标[target] ... : 依赖[prerequisites] ...
+			<TAB>命令[command]
+			+ target：表示转换的目标文件
+			+ prerequisites：表示依赖文件
+			+ command：表示转换的命令
+	
+	+ 命令
+		1. 变量
+			+ 声明变量：var = main.o
+			+ 使用变量：$(var)或者${var}
+	
+		2. 参数
+			+ -E：预处理后即停止，不进行编译，生成.i文件。
+			+ -S：编译后即停止，生成.s文件。
+			+ -c：编译指令，不连接，生成.o文件
+			+ -o：连接指令，生成可执行文件。	
+			+ -Wall：打印警告信息。
+			+ -I：将指定路径作为第一个头文件路径。
+			+ -g：产生调试信息
+			+ -O：优化选项[-O1,-O2,-O3]，一般使用-O2。-O0代表不优化。
+			+ -l：用来指定程序要链接的库
+			+ -L：用来制指定库文件所在的目录名
+			+ -C：切换到指定目录再执行 make 过程，makefile 在这个指定目录里面。
+	
+		3. 关键字
+			+ wildcard：扩展通配符
+				在Makefile规则中，通配符*. 会被自动展开。但在变量的定义和函数引用时，通配符将失效。
+				这种情况下如果需要通配符有效，就需要使用函数“wildcard”。
+				一般我们可以使用“$(wildcard *.c)”来获取工作目录下的所有的.c文件列表。
+			+ notdir：去除路径
+			+ patsubst：替换通配符
+				格式：$(patsubst <pattern>,<replacement>,<text> ) 
+				功能：查找<text>中的单词单词以“空格”、“Tab”或“回车”“换行”分隔. 是否符合模式<pattern>，
+					如果匹配的话，则以<replacement>替换。这里，<pattern>可以包括通配符“%”，表示任意长度的字串。
+					如果<replacement>中也包含“%”，那么，<replacement>中的这个“%”将是<pattern>中的那个“%”所代表的字串。
+					可以用“\”来转义，以“\%”来表示真实含义的“%”字符. 
+					返回：函数返回被替换过后的字符串。
+				示例：
+					$(patsubst %.c,%.o,x.c.c bar.c)
+					把字串“x.c.c bar.c”符合模式[%.c]的单词替换成[%.o]，返回结果是“x.c.o bar.o”
+		+ 符号
+			1. $@ 表示目标文件
+			2. $^ 表示所有依赖文件一般在生成目标文件时使用. 
+			3. $< 表示第一个依赖文件一般在生成中间文件时使用. 
+	
+		4. 符号
+			+ =  是最基本的赋值，其值取决于整个Makefile展开后，变量的值。
+			+ := 是覆盖之前的值，其值取决于它在Makefile所在的位置。
+			+ ?= 是如果没有被赋值过就赋予等号后面的值
+			+ += 是添加等号后面的值	
+	
+		5. 扩展
+			+ -std=gnu99，使用基于GNU扩展的标准
+	
+	+ 编译
+		1. 命令：arm-linux-gcc
+			+ 针对arm平台进行编译
+		2. 例程：
+			+ arm-linux-gcc -o main main.c
+			+ arm-linux-gcc main.c -o main
+	
+	+ 连接
+		1. 命令：arm-linux-ld
+		2. 针对arm平台的连接
+		3. 可以添加-T选项，指定连接地址信息，如arm-linux-ld -Ttext 	0x40000000 -o main.c main.elf
+
+	+ 常见错误
+		1. 问题：编译器显示错误"led.S: file not recognized: File format not recognized"
+			原因：源文件为 
+				led.bin : led.S
+					arm-linux-ld -Ttext 0x40000000 -o led.elf $^
+			解决：将led.S改为led.o
+
++ 链接脚本
+	1. 文件格式
+		+ 文件名：*.lds
+		+ 在等号左右必须加空格
+	
+	1. 常见问题
+		+ 问题：arm-linux-ld:tiny4412.lds:1: ignoring invalid character `\37777777757' in expression
+		解决：文件 *.lds不能是[UTF-8]格式，通过vim创建*.lds文件可以正常连接。打开后是[ANSI/OEM - GBK]格式。
+		
++ U-Boot
+	1. 烧录Uboot到SD卡
+		+ 步骤
+			1. 将文件"uboot_tiny4412_0929.tar.gz"，发送到虚拟机中的Linux中。
+			2. 解压缩文件：tar zxf uboot_tiny4412_0929.tar.gz
+			3. 由于需要用到硬件真实的地址，需要关闭MMU。打开文件：vim ./include/configs/tiny4412.h，将
+			#define CONFIG_ENABLE_MMU 修改为 #undef CONFIG_ENABLE_MMU
+			4. 修改Uboot的连接地址。打开文件vim ./board/samsung/tiny4412/config.mk，将
+			CONFIG_SYS_TEXT_BASE = 0xC3E00000修改为0x43E00000
+			5. 回到主目录：make tiny4412_config
+			5. make  ，生成文件u-boot.bin
+			6. 进入目录：cd sd_fuse，输入make，生成mkbl2文件
+			7. 进入目录：cd tiny4412，将SD卡插入电脑，输入fdisk -l，出现设备标识，sdb1
+			8. 输入 ./sd_fusing.sh /dev/sdb
+		
+	2. 烧录Uboot到eMMC
+		+ 擦除eMMC
+			1. 首先U-Boot需要能够从SD卡启动，进入命令行。
+			2. 输入 mmcinfo0，则打印SD卡信息。
+			3. 输入 mmcinfo1，则打印eMMC信息。
+			3. 输入 fdisk -p 0，显示SD卡只有一个分区。
+			4. 输入 fdisk -p 1，显示eMMC有4个分区。
+				显示partion 1:407 2:608 3:2057 4:520
+				分别表示：分区1 是FAE分区， 分区2 是给system的，分区3是user-data, 分区4 是 cache。
+			5. 输入 fdisk -c 1 608 2057 520，下面开始正式格式化。
+			6. 输入 fatformat mmc 1:1，格式化第一个分区为fat32格式
+			7. 输入 ext3format mmc 1:2，格式化第二个分区为ext3格式
+			8. 输入 ext3format mmc 1:3，格式化第三个分区为ext3格式
+			9. 输入 ext3format mmc 1:4，格式化第四个分区为ext3格式
+			
+		+ 烧录U-Boot到eMMC
+			1. 输入 emmc open 1，打开eMMC设备第一个分区。
+			2. dnw 70003000，注意该地址范围：40000000 ~ 7FFFFFFF，共1G地址空间，该地址为物理内存地址，在MMU关闭的情况下。
+			3. 在Linux主机中输入 dnw E4412_N.bl1.bin，传送该文件到内存地址70003000.
+			4. U-Boot收到数据后，输入 mmc write 1 0x70003000 0 0x10，表示：从内存地址0x70003000开始读取16块1块=512字节. ，
+				写入到设备1已知是eMMC. 中，起始地址为0，写入大小0x10(16)块。
+			5. 在Linux主机中输入 dnw bl2.bin，传送该文件到内存地址70003000.
+			6. U-Boot收到数据后，输入 mmc write 1 0x70003000 0x10 0x1C，表示：从内存地址0x70003000开始读取28块1块=512字节. ，
+				写入到设备1已知是eMMC. 中，起始地址为0x10，写入大小0x1C(14K = 28块 = 0x1C)块。
+			7. 在Linux主机中输入 dnw u-boot.bin，传送该文件到内存地址70003000.
+			8. U-Boot收到数据后，输入 mmc write 1 0x70003000 0x30 0x21D，表示：从内存地址0x70003000开始读取506块实际大小约252K，按照253K拷贝数据. ，
+				写入到设备1已知是eMMC. 中，起始地址为0x30由于第二块需要占用空间16K，8+16=24K. ，写入大小0x21D(541)块。
+			9. 在Linux主机中输入 dnw E4412_tzsw.bin，传送该文件到内存地址70003000.
+			10. U-Boot收到数据后，输入 mmc write 1 0x70003000 0x2C0 0xB8，表示：从内存地址0x70003000开始读取184块实际大小92K. ，
+				写入到设备1已知是eMMC. 中，起始地址为0x2C0由于第三块需要占用空间253K，8+16+253=277K. ，写入大小0xB8(184)块。
+			11. 至此，数据写入完毕。输入emmc close 1，关闭设备。
+		
+		
++ Kconfig
+	1. Kconfig是内核的配置界面的源文件，通过配置该文件可以控制配置界面的显示
+		+ 符号
+			1. 类型
+				+ bool：布尔类型，包含y/n两个选项
+				+ tristate：三态类型，包含y/n/M，其中M=模块
+		
+		+ select
+			1. 表示反向依赖，选择该选项，将同时选中依赖的选项。
+		
+		+ default
+			1. 默认选择
+		
+		+ help
+			1. 帮助文档
+		
+		+ depends on
+			1. 表示依赖条件，只有依赖的选项存在后，才能显示该选项
+
+
++ 设备驱动	
+	+ Fedora平台
+		+ 构建内核树
+			1. 输入"yum install kernel-devel"
+			2. 内核路径：/usr/src/kernels
+	
+	+ Ubuntu平台
+		+ 配置编译环境
+			1. 输入apt-get install module-assistant
+
+	+ Tiny4412平台
+		+ 步骤
+			1. 本节准备介绍ARM开发板Tiny4412的驱动开发，并非裸机驱动，而是基于Linux操作系统的驱动程序。
+			友善之臂已经将驱动程序和内核一起编译，我们为了学习底层驱动程序，因此采用动态加载的方式编写驱动代码。
+			2. 驱动程序是依赖于具体某一个内核版本的，因此我们必须准备一份与开发板内核版本一致的Linux源码，在光盘中
+				文件名：“Linux-3.5-20151029.tgz”。解压。
+			3. 输入 cp tiny4412_linux_defconfig .config
+			4. 输入 make 编译内核
+			5. 输入 make modules_install，将编译生成的modules添加到电脑端内核目录 /lib/modules/3.5.0-FriendlyARM
+			6. 编写驱动源文件及Makefile，生成xxx.ko文件
+			7. 通过ssh/ftp等方式传输到开发板。
+			8. 在开发板中，输入insmod xxx.ko加载驱动
+			9. 通过dmesg | tail -10，查看最后10个加载的驱动，看是否加载成功。也可以使用lsmod查看。
+			10. 通过rmmod xxx 即可卸载驱动。
+			11. 编写相应的应用层文件，调用编写的驱动程序，验证驱动是否正常工作。
+			
+	+ 常见问题
+		+ 问题：在开发板中使用modinfo xxx.ko，提示：modinfo: can't open '/lib/modules/3.5.0-FriendlyARM/modules.dep': No such file or directory
+		解决：进入/lib/modules/3.5.0-FriendlyARM/,输入cp modules.dep.bb modules.dep
+		
+		+ 问题：在开发板中，通过insmod可以成功加载驱动，通过rmmod不能卸载驱动，lsmod仍然可以找到驱动？
+		解决：编写一个rmmod的驱动程序，通过arm-linux-gcc -static -o rmmod rmmod.c 编译，将文件传输到开发板./sbin目录下。
+			再次使用rmmod即可成功卸载驱动。
+		
+		+ 问题：编写led驱动，下载到开发板，使用insmod提示：insmod: can't insert 'bsp_led.ko': Device or resource busy
+		原因：1. 使用dmesg | tail -10，可以发现程序执行 gpio_reques() 失败，由于开发板默认已经配置led引脚，因此请求失败。
+			2. 如果采用静态分配的ID，可能存在冲突。
+		解决：1. 去掉 gpio_reques() gpio_free()相关语句。
+			2. 修改主ID号，直至不产生冲突。
+		
+		+ 问题：测试LED驱动时，友善之臂已经在内核中添加LED驱动程序，以及应用程序，干扰了试验结果，怎么解决？
+		解决：进入 /etc/init.d，打开rc.S文件，找到语句/etc/rc.d/init.d/leds start 前面添加#，即可解决。
+
++ 概念
+	+ 设备类型
+		1. Linux中一切皆是文件！
+		2. Linux将设备分为3类，字符设备，块设备，网络设备。
+		3. 任何一种设备类型都可以在/dev目录中，对应一个文件。
+	
+	+ 字符设备
+		1. 是指只能一个字节一个字节读写的设备，不能随机读取设备内存中的某一数据，读取数据需要按照先后数据。字符设备是面向流的设备，常见的字符设备有鼠标、键盘、串口、控制台和LED设备等。
+		2. 设备号
+			+ 分为主设备号，和次设备号。
+			+ 一个完整的设备号为无符号32位整形，其中主设备号为高12位，次设备号为低20位。
+			+ 设备号可以静态申请，也可以动态申请。
+			+ 加载驱动后，向内核注册设备，可以使用cat /proc/devices查看分配的主设备号
+
+	+ 块设备
+		1. 是指可以从设备的任意位置读取一定长度数据的设备。块设备包括硬盘、磁盘、U盘和SD卡等。
+	
+	+ 网络设备
+		1. 包括常见的以太网。
+	
+	+ 符号：
+		1. 在Makefile中，常见的符号：
+			+ obj-m：表示编译成模块
+			+ boj-y：表示编译进内核
+			+ obj-n：表示不编译进内核	
++ Linux
+	首先需要能进入U-Boot环境，参考“烧录Uboot到eMMC”
+	+ 生成zImage
+		1. 将内核源文件解压缩。得到文件夹“linux-3.5”
+		2. 进入"linux-3.5"，输入 cp tiny4412_linux_defconfig .config
+		3. 输入make menuconfig，在Linux内核配置界面，必须关闭trustZone，否则进不了系统。具体目录在：System Type->Support TrustZone-enabled Trusted Exception Environment
+			取消勾选。
+		4. 输入make
+		5. 遇到警告：
+		```C
+		Can't use 'defined(@array)' (Maybe you should just omit the defined()?) at kernel/timeconst.pl line 373
+		解决：删除
+			@val = @{$canned_values{$hz}};
+			if (!defined(@val)) {
+			@val = compute_values($hz)?
+			} 
+			在output前面加入
+			$cv = $canned_values{$hz};
+			@val = defined($cv) ? @$cv : compute_values($hz);
+		```
+		6. 等待结束，在./arch/arm/boot目录得到zImage文件。
+
++ 烧录Linux
+	+ 生成uImage
+		+ 方式一 
+			1. 进入uboot文件夹，找到./tools目录中mkimage文件，将该文件复制到/usr/local/bin文件夹中。
+			2. 进入./linux-3.5 目录下，输入 make uImage
+			3. 在./arch/arm/boot目录下，可以发现uImage映像文件。
+		
+		+ 方式二
+			1. 进入uboot文件夹，找到./tools目录中mkimage文件，将该文件复制到/usr/local/bin文件夹中。
+			2. 进入./linux-3.5 目录下，输入 
+			```C
+			mkimage -A arm -O linux -T kernel -C none -a 40008000 -e 40008000  -n linux-3.5.0 -d arch/arm/boot/zImage uImage
+			``` 
+			这样就在当前目录生成uImage文件。
+	
+	+ 将uImage发送到uboot
+		1. 进入uboot环境，通过dnw发送uImage到内存地址0x40008000,该地址在uboot环境下，输入printenv可以看到。
+		2. bootm 40008000进入内核。
+		3. 实测这种方式不能进入系统。	
+			
+	+ 使用fastboot烧录内核
+		1. 参考博文：http://blog.csdn.net/lizuobin2/article/details/52825033
+		大致流程：
+			1. 格式化eMMC
+				fdisk -c 1 320 2057 520		
+			2. 格式化分区
+				fatformat mmc 1:1
+				fatformat mmc 1:2
+				fatformat mmc 1:3
+				fatformat mmc 1:4
+			3. bl1.bin, bl2.bin, u-boot.bin, tzsw.bin烧录到eMMC中
+			4. 将拨动开关拨到eMMC启动，进入U-Boot	
+			4. 设置环境变量
+				> setenv bootargs root=/dev/mmcblk0p1 rootfstype=ext4 console=ttySAC0,115200 init=/linuxrc ctp=2 skipcali=y
+				 或者setenv bootargs console=ttySAC0,115200n8 noinitrd root=/dev/mmcblk0p1 rw rootfstype=ext4 init=/linuxrc lcd=S700 ctp=2
+				> saveenv
+			5. 输入fastboot，进入fastboot环境
+			6. 在电脑端Linux，输入：
+				> fastboot flash kernel zImage (来自Linux make后的镜像)
+				> fastboot flash fat rootfs_qtopia_qt4.img来自光盘Linxu文件夹. 
+				> fastboot flash ramdisk ramdisk-u.img来自光盘Linxu文件夹. 
+			7. 输入reset重启开发板，成功烧录Linux
+			
++ android
+	+ 生成zImage
+		1. 将内核源文件解压缩。得到文件夹“linux-3.0.86-20150324.tgz”
+		2. 进入"linux-3.0.86"，输入 cp tiny4412_android_defconfig .config
+		3. 进入make menuconfig 关闭trust zone
+		4. 输入 make (或者make -j4，加快编译速度. 
+		5. 等待结束，在./arch/arm/boot目录得到zImage文件。
+
+	+ 烧录安卓
+		+ 参考博文：http://blog.csdn.net/lizuobin2/article/details/52825033
+		大致流程：
+			1. 格式化eMMC
+				fdisk -c 1 320 2057 520		
+			2. 格式化分区
+				fatformat mmc 1:1
+				fatformat mmc 1:2
+				fatformat mmc 1:3
+				fatformat mmc 1:4
+			3. bl1.bin, bl2.bin, u-boot.bin, tzsw.bin烧录到eMMC中
+			4. 将拨动开关拨到eMMC启动，进入U-Boot	
+			4. 设置环境变量
+				> setenv bootargs console=ttySAC0,115200n8 androidboot.console=ttySAC0 uhost0=n ctp=2 skipcali=y vmalloc=512m lcd=S70
+				> saveenv
+			5. 输入fastboot，进入fastboot环境
+			6. 在电脑端Linux，输入：
+				> fastboot flash kernel zImage (来自Linux make后的镜像)
+				> fastboot flash system system.img来自光盘android4.1.2文件夹. 
+				> fastboot flash ramdisk ramdisk-u.img来自光盘android4.1.2文件夹. 
+			7. 输入reset重启开发板，成功烧录android
+	
+
++ 根文件系统
+	+ busybox
+		1. 从以下网址下载“https://busybox.net/”，版本：1.25.1
+		2. 解压后，输入make menuconfig，
+			+ 弹出错误：“ecipe for target 'scripts/kconfig/lxdialog/checklist.o' failed”
+				解决：fedora：输入yum install ncurses-devel
+					  ubuntu:输入apt-get install libncurses5-dev
+			再次运行，打开菜单项：
+			+ 输入：make menuconfig，选择busybox settings->build options，
+				选择静态库; 进入cross compiler prefix，输入arm-linux-
+			+ 进入 Installation Options->busybox installation prefix，输入路径：/home/sy/Docments/rootfs/ 
+			+ 一些错误，参考：“arm-linux-gcc4.4.3编译busybox-1.25.pdf”
+			+ 还有一个错误，“recipe for target 'docs/busybox.net/BusyBox.html' failed”，根据错误提示文件名及页码
+				进入./Makefile.custom，屏蔽掉166~169行。
+			+ 再次编译，成功。
+			+ 输入make install，前提是路径在make menuconfig已设置。
+
++ NFS网络文件系统
+	+ 主机Linxu
+		+ 构建网络文件系统 
+			1. 将光盘文件”rootfs_qtopia_qt4.zip“解压缩到 /home/sy/Documents/目录下
+			2. 安装网络系统程序，yum install nfs-utils
+			3. 打开vim /etc/exports，输入 /home/sy/Documents/rootfs_qtopia_qt4 *(rw,sync,no_root_squash)
+			4. 关闭防火墙：systemctl stop firewalld.service
+			5. 启动网络文件系统 systemctl start nfs-server.service 
+			6. 查看网络文件系统状态 systemctl status nfs-server.service
+			7. 查看本机IP地址：ifconfig 为192.168.2.150
+		
+		+ 测试网络文件系统
+			1. 新建挂载文件系统的文件夹mkdir rootfs， chmod 777 /rootfs
+			 (2) 挂载网络文件系统:mount 192.168.2.150:/home/sy/Documents/rootfs_qtopia_qt4/ /home/sy/Documents/rootfs/
+			3. 在目录/home/sy/Documents/rootfs 即可看到/home/sy/Documents/rootfs_qtopia_qt4/目录所有的文件了，
+				说明网络文件系统构建成功
+			4. 查看当前挂载的网络文件系统，nfsstat -m
+			5. 卸载网络文件系统：umount -f /home/sy/Documents/rootfs，如果不卸载，在开发板上将一直处理等待状态。
+	
+	+ MiniTools软件
+		+ 步骤
+			1. 在SD卡的FriendlyARM.ini文件中，添加USB-Mode=Yes
+			2. 将开发板拨盘调到SD卡启动，此时软件显示开发板已连接。进入Linux页，在Kernel CommandLine前面打钩，
+				填写：console=ttySAC0 root=/dev/nfs nfsroot=192.168.2.150:/home/sy/Documents/rootfs_qtopia_qt4 
+						ip=192.168.2.7
+				console：表示内核启动后使用串口输出信息，否则使用液晶屏。
+				root：表示采用NFS的方式挂载文件系统，否则使用开发板自带的文件系统
+				nfsroot：表示开发板需要挂载的文件系统的主机IP以及目录。必须和/etc/exports文件中的路径一致
+				ip：表示将开发板分配一个IP地址。
+			3. 烧录到开发板。
+	
+		+ 步骤：
+			1. 如果不是使用superboot，而是uboot设置环境变量，那么需要在uboot界面输入
+				setenv bootargs console=ttySAC0 root=/dev/nfs nfsroot=192.168.2.150:/home/sy/Documents/rootfs_qtopia_qt4 ip=192.168.2.7
+			2. saveenv保存环境变量
+	
+	+ 开发板Linux
+		1. 将开发板的开关打到flash启动，重新开机，即可启动内核，进入NFS网络文件系统中
+		
+
++ MiniTools
+	+ MiniTools的安装
+		1. 问题：操作系统为Windows10，安装“MiniToolsSetup-Windows-20150528”完毕后，连接开发板提示不能连接？
+			+ 打开任务管理器，在“其他设备”栏显示“Android 1.0”图标,图标右下角有一个感叹号标志，说明驱动未安装成功。
+			经过多次尝试后，最终通过“驱动精灵”自动安装成功！
+
++ dnw
+	简介：dnw用来从Linux向开发板内存下载固件，通过USB进行传输，开发板需要烧录U-Boot，将开发板与电脑通过串口连接。
+	+ 使用步骤
+		+ 准备dnw软件，从 https://github.com/Qunero/dnw4linux，选择Download ZIP，下载"dnw4linux-master.zip"到本地。
+		+ 使用secureCRT发送到服务器后，通过unzip解压缩，生成两个主要的文件夹：
+			1. 其中"secbulk_driver"为USB驱动，由于每个人的Linux内核可能不一样，因此需要根据自己的内核重新编译动态链接库文件(.ko)，
+				查看路径"/lib/modules/xxx"是否有内核，如果没有，通过输入"yum install kernel-devel"，构建内核树。
+			2. 输入make即可自动编译，生成sebulk_driver.ko动态链接库文件。
+			3. 将编译出来的.ko文件，加载进内核，输入"insmod sebulk_dricer.ko"，如果不报错，输入lsmod，查看文件是否已经在
+				其中。
+			4. 由于动态链接库文件，在下次开机时需要再次加载，为了减少麻烦，可以进入路径“/etc/rc.d/rc.local”，在后面添加
+				insmod /home/sy/Documents/dnw/xxx/sebulk_dricer.ko，将动态链接库开机自动加载进内核。
+			5. 再回到"dnw_src"文件夹，输入make可以编译出来dnw可执行文件，为了方便在任意目录使用./dnw发送数据，可以通过make install命令
+				将dnw文件传送到"usr/sbin"目录。
+		+ 在开发板进入u-boot时，按下空格键，输入dnw + 程序运行内存地址(与程序连接地址一致)，此时usb驱动自动加载，开发板等待接收文件...
+		+ 在Linux中，输入lsusb,可以看到三星的USB设备被发现，如果使用虚拟机，没找到USB设备，必须进入vmware连接USB设备。
+		+ 进入烧录文件目录，输入dnw + 烧录文件，即可传输数据。
+		+ 如果USB驱动出现错误，检查secbulk.c中的
+			#define		DOWNLOAD_USB_ID_MAJOR		0x04e8
+			#define		DOWNLOAD_USB_ID_MINOR		0x1234
+			是否与你得USB的ID匹配，通过lsusb可以观察。
+
++ MiniCOM
+	+ dmesg | grep tty
+
++ secure CRT
+	+ 传输文件
+		+ Windows远程登录Linux服务器
+			1. 打开secure CRT软件，点击“快速连接”
+			2. 填写参数：
+				协议：SSH2 	主机名：192.168.1.129服务器IP. 
+			 	端口：22	用户名：syLinux用户名. 
+			 点击“连接”。
+			3. 弹出密码输入窗，输入用户密码。
+			4. 如果连接不上，首先检查用户名、密码。
+			5. 再者到虚拟机中的终端，输入“netstat -tlp”，如果显示“tcp6 0 0 *:ssh *:* LISTEN -”表示服务器SSH服务已打开！
+			6. 如果Server-SSH未打开，输入“/etc/init.d/ssh restart”开启服务。
+		
+		+ Secure CRT配置文件传输
+			1. 依次点击“Options”-"Session Options"-“X/Y/Zmodem”，填写上传、下载相应的目录。
+		
+		+ Ubuntu中支持ZModem协议
+			1. 输入“apt-get install lrzsz”
+			2. 如果提示"command not found"，输入"apt-get update"
+		
+		+ 文件上传/下载
+			1. 上传：指的是客户端传送文件给Linux服务器。
+				在secure CRT中定位将要上传到服务器的位置，输入"rz"命令，在弹出的对话框中选择待发送的文件，点击发送。
+			2. 下载：指的是客户端从服务器接收文件。
+				在secure CRT中定位需要接收的文件的目录，输入"sz + 文件名"，即可收到服务器发送的文件。
+		
+		+ 显示中文乱码
+			1. 依次打开：[Options]-[Session Options]-[Appearance]-[Character encoding]，选择 UTF-8
+			2. 如果依然乱码：则编写代码的文本编辑器不是UTF-8进行编码，比如UltraEdit，依次进入[高级]-[设置]-[新文件创建]-[编码类型]-[将新文件创建成UTF-8]
+			3. 可能Linux使用的默认编码不是UTF-8。
+		
+		+ 快速切换标签页
+			1. Ctrl + Tab
+
++ FTP
+	简介：FTP可以方便的在主机和Linux服务器、Linux服务器和开发板之间传输文件。
+
+	+ Linux服务器配置FTP服务
+		+ 安装vsftpd软件
+			1. 输入：apt-get install vsftpd
+			2. 输入：gedit /etc/vsftpd.conf
+			3. 找到：#local_enable=YES #write_enable=YES ,将#去掉、保存。
+			4. 输入：/etc/init.d/vsftpd start 开启FTP服务，以后启动系统时，FTP服务自动启动。
+	
+		+ 安装FlashFXP
+			1. 输入IP、端口、用户名、密码即可登录Linux服务器
+			2. 依次进入“站点”-“站点管理器”-“选项”-“字符编码”，将编码改为“UTF-8”,解决乱码问题。
+			3. 重启软件。
+	
+		+ FTP常用命令
+			1. 打开服务：ftp + [目标主机IP]
+			2. 打开连接：open + [目标主机IP]
+			3. 上传文件：put + [本地路径] + [远程路径]
+			4. 批量上传文件：mput + [*.*]
+			5. 下载文件：get + [远程路径] + [本地路径]
+			6. 批量下载文件：mget + [*.*]
+			7. 断开连接：bye 或 exit
+			
+	+ 常见问题：
+		+ 问题：FTP不能上传文件，提示“425 Can't open passive connection: Permission denied. Passive mode refused.”？
+		原因：FTP主动模式造成的。一般FTP默认为被动模式，这两种模式发起连接的方向截然相反，主动模式是从服务器端向客户端发起；
+		被动模式是客户端向服务器端发起连接，由于本地(客户端)存在防火墙，一般主动模式很难成功。
+		解决：在电脑端ftp窗口输入：
+		ftp>passive
+		passive mode off
+
+	+ Fedora
+		+ 安装ftp：yum -y install vsftpd
+		+ 修改配置文件：vim /etc/vsftpd/vsftpd.conf，
+			1. 把write_enable = YES,前面的#去掉。
+			2. 把ascii_upload_enable=YES,前面的#去掉
+			3. 把ascii_download_enable=YES,前面的#去掉
+			4. 在listen_ipv6前面加上#
+			5. 把listen=YES前面的#去掉
+		+ 重启vsftpd服务
+			1. systemctl start vsftpd.service
+			2. systemctl enable vsftpd.service
++ SSH			
+	+ SSH服务
+		+ 更新源列表
+			1. 输入"sudo apt-get update"
+		
+		+ 安装ssh
+			1. 输入"sudo apt-get install openssh-server"
+		
+		+ 查看ssh服务
+			1. 输入"sudo ps -e | grep ssh"
+				如果有"sshd"表示服务已经启动
+		
+		+ 开启ssh服务
+			1. 输入"sudo service ssh start"
+		
+		+ 关闭ssh服务
+			1. 输入“sudo service ssh stop"
+		
+		+ 查看ssh状态
+			1. 输入"sudo service ssh status"
+	
+	+ Fedora
+		+ 打开ssh
+			1. service sshd start
+		
+		+ 停止ssh
+			1. service sshd stop
+		
+		+ 重新打开
+			1. service sshd restart
+		
+		+ 设置开机自启动
+			1. systemctl enable sshd.service
+	
+			
++ 搭建交叉编译器	
+	简介：我们编写的程序不能在开发板中直接编译，因此需要交叉编译器，在主机中编译，然后传输到开发板中执行。
+	流程大致为：我们在Linux中编写程序，通过Makefile文件，编译连接为可执行文件。通过
+		1. 串口
+		2. FTP协议
+		3. 挂载U盘
+		等形式，将可执行文件传输到开发板。
+
++ 步骤：
+	+ 解压缩包
+		+ 将"arm-linux-gcc-4.5.1-v6-vfp-20120301.tgz"拷贝到linux任意目录，输入
+		"tar xvzf arm-linux-gcc-4.5.1-v6-vfp-20101103.tgz –C /"。
+	
+		+ 添加环境变量
+			1. 输入"sudo vim /etc/profile"
+			2. 添加"export PATH=$PATH:/opt/FriendlyARM/toolschain/4.5.1/bin"
+			3. 输入"source /etc/profile"
+			4. 输入"echo $PATH"，如果显示上述路径则添加成功！
+	
+		+ 安装64位程序
+			1. 输入“sudo apt-get install lsb-core”
+		
+		+ 查看gcc版本
+			1. 输入"arm-linux-gcc -v"
+	
++ Fedora
+	+ 输入arm-linux-gcc -v，弹出错误：“bash: /opt/FriendlyARM/toolschain/4.5.1/bin/arm-linux-gcc: 
+	/lib/ld-linux.so.2: bad ELF interpreter: No such file or directory”，原因是64位的系统安装了32的软件，
+	需要安装相应的库，输入"yum install glibc.i686"
+	
++ 中文输入法	
+	+ 安装步骤
+		+ 选择fcitx
+			1. 打开“语言支持”选项卡，选择键盘输入法系统：fcitx。如果没有此选项，打开终端，输入“im-config”，找到fcitx选项，点击OK。
+			2. 登出账户后，在“文本输入”选项卡即可看到中文输入法。	
+
++ Linux常见问题
+	+ 问题：在登录界面，输入用户名，密码正确，但是进不了系统？
+	原因：/etc/profile 文件内容错误。例如：输入export PATH = PATH:/xxxxxx，就会进不了系统，正确输入：export PATH = $PATH:/xxx
+	解决：因为进不了系统，可以通过SSH访问系统，但是输入命令都是无效的，
+	可以输入：export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
+	临时设置环境变量，便可以正常进入系统了。
+
++ Tiny4412常见问题
+	+ 动态链接库丢失
+		+ 问题：在开发板上运行可执行程序，BASH提示："No such file or directory"？
+		原因：缺少动态链接库(.so)。
+		解决：
+			1. 输入命令"readelf -a + [可执行文件]"，
+				屏幕打印："[Requesting program interpreter: /lib/ld-linux.so.3]"。可见缺少“ld-linux.so.3”库文件。
+			2. 参考博文"http://blog.csdn.net/harry_helei/article/details/5740456"
+				从网站"http://www.scratchbox.org/download/files/sbox-releases/stable/tarball/"下载文件
+				"scratchbox-toolchain-cs2009q1-eglibc2.8-armv7-1.0.15-9-i386.tar.gz"，解压后，从以下路径
+				"scratchbox/compilers/cs2009q1-eglibc2.8-armv7/arm-none-linux-gnueabi/libc/lib/"取出文件
+				"ld-2.8.so"，而“ld-linux.so.3”是"ld-2.8.so"的快捷方式。
+			3. 将该文件传送到开发板路径"\lib"目录下，改变权限"chmod 777 ld-2.8.so"。
+			4. 使用命令："ln -s ld-2.8.so ld-linux.so.3"创建快捷方式。
+			5. 再次运行可执行文件，BASH提示："./main: error while loading shared libraries: libc.so.6: 
+					cannot open shared object file: No such file or directory"，表示又缺少动态链接库。
+			6. 从刚才下载文件的路径，提取库"libc.so.6"，将文件传输到开发板路径"\lib"目录下。
+			7. 改变权限"chmod 777 libc.so.6"。
+			8. 再次运行可执行文件，打印出："Hello Word!"，程序正常。
+				
+	+ Uboot不能成功进入
+		+ 问题：将Uboot烧录到SD后，串口打印OK，并没有打印Uboot信息？
+		原因：由于友善之臂更换了eMMC，因此需要使用新的Uboot。
+		解决：使用名称："uboot_tiny4412_0929.tar.gz"的Uboot
+	
+	+ 无法识别SD读卡器	
+		+ 问题：使用“fdisk -l”命令无法侦测SD读卡器？
+		原因：
+		1. fedora安装在虚拟机VMware中，插入U盘后，电脑端可以显示U盘，虚拟机右下角可以检测到U盘插入。
+		2. 使用命令"fdisk -l"无法检测到U盘。
+		3. 使用“lsusb”也未找到设备。
+		4. 将虚拟机“设置-USB控制器”，设置为USB兼容性：USB3.0依然没用
+		5. 通过点击“虚拟机-可移动设备-U盘名”，点击“连接”，虚拟机提示USB驱动错误。
+		6. 格式化U盘，无效。
+		解决：通过安装新版本的虚拟机“VMware-workstation-full-12.5.0-4352439.exe”，重新插入U盘，
+			点击“虚拟机-可移动设备-U盘名”，点击“连接”，此时电脑端U盘消失，使用“fdisk -l”检测到U盘！
+			再次插拔U盘后，电脑端不再显示U盘了。
+		总结：U盘只能被一台主机使用，如果想在虚拟机使用，必须通过虚拟机设置连接U盘！
+		
+	+ 问题：使用SD-Flasher.exe小软件无法 ReLayout？
+	解决：点击ReLayout按钮，提示失败，再次点击ReLayout按钮即可成功！
+	
+	+ 问题：输入su时，提示su: must be suid to work properly？
+	原因：嵌入式文件系统一般用户执行su root切换根用户提示错误：
+			su: must be suid to work properly
+	解决：chmod 4755 ./bin/busybox。
+	解释：chmod 4755与chmod 755 的区别在于开头多了一位，这个4表示其他用户执行文件时，具有与所有者相当的权限。
+		
+
++ Tiny4412裸机编程
+	+ 裸机烧录步骤：
+		1. 三星的4412处理器，上电后执行固化在ROM中的BootLoad0，该BootLoad做出相应的初始化步骤后，选择从SD卡或者其他外设启动，
+		2. 我们选择SD卡启动后，程序便把SD卡中第512字节SD卡：512字节为1块，前面的第一个块用于建立分区表. 开始的8K字节拷贝到
+			内存iRAM [iRAM基地址 + 5K(堆栈等) = 0x02020000 + 0x1400 = 0x02021400]中执行，
+			这8K字节便是BootLoader1，由三星提供，文件名为：E4412_N.bl1.bin。其中，该文件的前16个字节用于提供校验信息，
+			处理器将8K字节由SD卡拷贝到内存后，校验成功后，执行BL1。
+		3. BL1从SD卡(512 + 8K)的位置拷贝16K字节到iRAM [iRAM基地址 + 5K(堆栈等) + 8K(BL1) = 0x02020000 + 0x1400 + 0x2000 = 0x02023400]，
+			然后执行，我们的裸机程序便是连接到当前地址。
+		4. BootLoader2的前14K-4个字节用于存储数据，后面4个字节用于存储校验和。	
+		5. 上述提到的地址可以参考：
+			Exynos 4412 SCP_Users Manual_Ver.0.10.00_Preliminary0.pdf，Memory Map部分。
+			Android_Exynos4412_iROM_Secure_Booting_Guide_Ver.1.00.00.pdf，24页。、
+			uboot_tiny4412_0929.tar.gz，裸机的脚本文件便是基于此进行改造。
+		6. 进入"uboot_tiny4412_0929-sd_fuse"文件夹，输入vim V310-EVT1-mkbl2.c，该文件是生成mkbl2的源文件，我们的裸机程序便是使用mkbl2烧录到SD卡bl2位置。
+			由于我们的裸机程序一般小于14k字节，而源程序要求必须大于14K字节，需要修改源程序。然后make编译出mkbl2文件。
+		7. 进入tiny4412文件夹，修改烧录脚本sd_fusing.sh，将bl2的源程序设置为我们编写的裸机源程序。
+		8. 插入SD卡，输入fdisk-l，查看sd卡已被检测，输入./sd_fusing.sh /dev/sdb即可自动烧录。
+		9. 将SD卡插入到开发板，即可看到程序在运行。
+	
+	+ 总结：
+		1. 重定位：程序的连接地址和烧录地址可以不一致，进入BootLoader1后，处理器从SD卡将BootLoader2的数据拷贝到指定地址，并跳转到该地址运行，
+			如果程序的连接地址与该地址不一致，就需要重定位过程，将当前物理地址的程序搬运到连接地址处，然后跳转到连接地址运行。
+		2. 在Makefile里，源文件的放置位置决定了连接时在文本段的位置。我们的程序一般从_start开始运行，因此需要将startup.S放在首位置。		
+
+
++ SHELL
+	+ if语句
+		格式：
+		```C
+		if [ command ]
+		then
+			语句1
+		else
+			语句2
+		fi
+		```
+		解释：
+		1. 如果 command == 0，则执行then，否则执行else。和c语言正好相反。
+		2. 如果“条件”存在多条语句，则相当于and连接。
+		例程：
+		```C
+		if [ ! -d "$abc" ];
+		then
+		mkdir "$abc"
+		fi
+		```
+	+ case语句
+		格式：
+		```C
+		case $变量 in
+		语句1)
+		;;
+		语句2)
+		;;
+		esac
+		```
+	
+		
+
+
