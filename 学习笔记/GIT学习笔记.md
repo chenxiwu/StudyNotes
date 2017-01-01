@@ -62,7 +62,11 @@
 		+ git clone https://github.com/dasuimao/StudyNote.git 克隆一份远程仓库的拷贝到本地
 	
 	+ pull 
-		+ git pull origin master 获取远程端最新的代码
+		+ git pull --rebase origin master 获取远程端最新的代码
+		
+	+ --rebase
+		rebase 与 merge 很相似都是合并代码，merge操作会产生一个新的commit。而rebase则不会产生新的commit，
+		他会将你的代码插入到服务器最新的commit的后面，看起来更加自然。
 
 + 过滤器
 	+ 忽略文件夹
