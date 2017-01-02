@@ -155,5 +155,10 @@
 
 	```
 	原因：由于本地推送时，本地仓库的代码比远端旧，因此推送会出现冲突。
-	解决：使用 `git pull --rebase origin master` 获取服务器最新的代码，再执行`git push origin master`即可。
+	解决：
+		1. 使用 `git pull --rebase origin master` 获取服务器最新的代码
+		2. 再执行`git push origin master`即可。
+		3. 如果在Pull时遇到冲突[同时修改一个文件的内容]，需要手动解决冲突。按照提示找到冲突的文件，修改后执行`git add + <冲突的文件>`，
+		告诉git已经解决了冲突，再输入`git rebase --continue`继续执行。
+			 
 	总结：工作流程是：修改代码→提交到本地仓库→拉取远程改动→推送
