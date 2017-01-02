@@ -237,19 +237,29 @@
 			+ ls >> cmd.txt：表示追加命令执行结果到cmd.txt
 		
 		+ 重定向输入
-			+ wall < cmd.txt：表示从cmd.txt读取数据并群发消息。		
+			+ wall < cmd.txt：表示从cmd.txt读取数据并群发消息。	
+			
+		+ 查看ip地址
+			+ ifconfig
+			+ ip address
+			
 	
 + Linux-fedora
 	+ 安装软件
 		1. 输入"yum install + 软件名"
 	
 	+ 防火墙
+		+ 打开防火墙	 
+			+ systemctl start firewalld.service
 		+ 关闭防火墙
-			1. sudo systemctl stop firewalld.service
-			2. sudo systemctl disable firewalld.service
-			3. setenforce 0
+			+ systemctl stop firewalld.service
+			+ setenforce 0
+		+ 开机启动防火墙
+			+ systemctl enable firewalld.service
+		+ 开机禁止防火墙
+			+ systemctl disable firewalld.service
 		+ 永久关闭防火墙
-			1. 进入/etc/selinux/config 把SELINUX=enforce   改成disabled就可以了，重启电脑，永久生效
+			+ 进入/etc/selinux/config 把SELINUX=enforcing   改成disabled就可以了，重启电脑，永久生效
 		
 	+ 查看发行版本
 		1. lsb_release -a
@@ -438,7 +448,8 @@
 			4. 输入 make 编译内核
 			5. 输入 make modules_install，将编译生成的modules添加到电脑端内核目录 /lib/modules/3.5.0-FriendlyARM
 			6. 编写驱动源文件及Makefile，生成xxx.ko文件
-			7. 通过ssh/ftp等方式传输到开发板。
+			7. 通过ssh/
+			8. 等方式传输到开发板。
 			8. 在开发板中，输入insmod xxx.ko加载驱动
 			9. 通过dmesg | tail -10，查看最后10个加载的驱动，看是否加载成功。也可以使用lsmod查看。
 			10. 通过rmmod xxx 即可卸载驱动。
@@ -728,6 +739,25 @@
 			6. 批量下载文件：mget + [*.*]
 			7. 断开连接：bye 或 exit
 			
+		+ FTP 常用服务
+			+ 打开ftp
+				1. service vsftpd start
+				2. systemctl start vsftpd
+			+ 关闭ftp
+				1. service vsftpd stop
+				2. systemctl stop vsftpd
+			+ 重启ftp
+				1. service sshd restart
+				2. systemctl restart sshd.service
+			+ 查看ftp状态
+				1. service vsftpd status
+				2. systemctl status vsftpd
+		
+		+ 匿名用户
+			+ 只要在 `/etc/vsftpd/vsftpd.conf`文件中配置：`anonymous_enable = YES`，就可以使用用户名：`anonymous`登录lInux。
+			+ 匿名用户登录默认主目录：/var/ftp/
+						
+			
 	+ 常见问题：
 		+ 问题：FTP不能上传文件，提示“425 Can't open passive connection: Permission denied. Passive mode refused.”？
 		原因：FTP主动模式造成的。一般FTP默认为被动模式，这两种模式发起连接的方向截然相反，主动模式是从服务器端向客户端发起；
@@ -735,6 +765,18 @@
 		解决：在电脑端ftp窗口输入：
 		ftp>passive
 		passive mode off
+		
+		+ 问题：使用SecureCRT连接linux的ftp服务器，登录时间过长？
+		原因：DNS反向解析造成的。
+		解决：
+		1. 打开文件：`vim /etc/ssh/sshd_config`添加内容：`useDNS no`重启ftp服务器：`systemctl restart sshd.service`
+		2. 如果还不行，打开文件：`vim /etc/vsftpd/vsftpd.conf`，添加`reverse_lookup_enable=NO`，重启ftp服务器。
+		
+		+ 问题：不能使用root用户登录ftp？
+		  解决：
+			1. 打开文件`vim /etc/vsftpd/ftpusers`在root前面加#
+			2. 打开文件`vim /etc/vsftpd/user_list`在root前面加#
+			3. 输入`systemctl restart vsftpd.service`重启ftp服务器
 
 	+ Fedora
 		+ 安装ftp：yum -y install vsftpd
