@@ -141,24 +141,22 @@
 		+ git push origin + <分支名>			
 			1. 如果推送时出错，使用 `git pull --rebase origin master`先获取并合并服务器端的改动，再push操作。
 
-+ 错误
++ 常见错误
 	+ 推送到远端仓库错误？
-	```C
-	$ git push origin master
-	To https://github.com/dasuimao/StudyNote.git
-	! [rejected]        master -> master (non-fast-forward)
-	error: failed to push some refs to 'https://github.com/dasuimao/StudyNote.git'
-	hint: Updates were rejected because the tip of your current branch is behind
-	hint: its remote counterpart. Integrate the remote changes (e.g.
-	hint: 'git pull ...') before pushing again.
-	hint: See the 'Note about fast-forwards' in 'git push --help' for details.
-
-	```
-	原因：由于本地推送时，本地仓库的代码比远端旧，因此推送会出现冲突。
-	解决：
-		1. 使用 `git pull --rebase origin master` 获取服务器最新的代码
-		2. 再执行`git push origin master`即可。
-		3. 如果在Pull时遇到冲突[同时修改一个文件的内容]，需要手动解决冲突。按照提示找到冲突的文件，修改后执行`git add + <冲突的文件>`，
-		告诉git已经解决了冲突，再输入`git rebase --continue`继续执行。
-			 
-	总结：工作流程是：修改代码→提交到本地仓库→拉取远程改动→推送
+		```C
+		$ git push origin master
+		To https://github.com/dasuimao/StudyNote.git
+		! [rejected]        master -> master (non-fast-forward)
+		error: failed to push some refs to 'https://github.com/dasuimao/StudyNote.git'
+		hint: Updates were rejected because the tip of your current branch is behind
+		hint: its remote counterpart. Integrate the remote changes (e.g.
+		hint: 'git pull ...') before pushing again.
+		hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+	
+		```
+		原因：由于本地推送时，本地仓库的代码比远端旧，因此推送会出现冲突。
+		解决：
+			1. 使用 `git pull --rebase origin master` 获取服务器最新的代码
+			2. 再执行`git push origin master`即可。
+			3. 如果在Pull时遇到冲突[同时修改一个文件的内容]，需要手动解决冲突。按照提示找到冲突的文件，修改后执行`git add + <冲突的文件>`，告诉git已经解决了冲突，再输入`git rebase --continue`继续执行。	 
+		总结：工作流程是：修改代码→提交到本地仓库→拉取远程改动→推送

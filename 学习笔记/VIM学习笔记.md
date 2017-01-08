@@ -62,13 +62,19 @@
 		
 	
 + 常见问题
-	+ Q：按下"ctrl + s"，程序僵死？
-	A：这是因为"ctrl + s"在linux代表锁定屏幕的快捷键，按下"ctrl + q"即可解锁！
+	+ 问题：按下"ctrl + s"，程序僵死？
+	> 解决：这是因为"ctrl + s"在linux代表锁定屏幕的快捷键，按下"ctrl + q"即可解锁！
 		
 + 技巧
-	+ Q：怎么在vim中加行号？
-	A： 1. 输入 vim /etc/vimrc
+	+ 问题：怎么在vim中加行号？
+	> 解决： 
+		1. 输入 vim /etc/vimrc
 		2. 在末尾添加：set number
+	
+	+ 问题：怎么在vim中将制表符调整为4个字符宽度？
+	> 解决： 
+		1. 输入 vim /etc/vimrc
+		2. 在末尾添加：set tabstop=4
 	
 	+ Q：怎么去掉SecureCRT中显示的下划线？
 	A：进入"Session Opinions"-"Appearance"-"Edit"，去掉打钩的可选框"Show Underline"

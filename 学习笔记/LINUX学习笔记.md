@@ -242,6 +242,16 @@
 		+ 查看ip地址
 			+ ifconfig
 			+ ip address
+
+		+ 查看当前进程
+			+ ps -ef
+
+		+ 杀死进程
+			+ kill + 进程号
+		
+		+ 查看系统服务
+			+ 列出所有系统服务：chkconfig --list
+			+ 添加系统服务： chkconfig --add
 			
 	
 + Linux-fedora
@@ -345,11 +355,13 @@
 		3. 可以添加-T选项，指定连接地址信息，如arm-linux-ld -Ttext 	0x40000000 -o main.c main.elf
 
 	+ 常见错误
-		1. 问题：编译器显示错误"led.S: file not recognized: File format not recognized"
-			原因：源文件为 
-				led.bin : led.S
-					arm-linux-ld -Ttext 0x40000000 -o led.elf $^
-			解决：将led.S改为led.o
+		1. 问题：编译器显示错误"led.S: file not recognized: File format not recognized"？
+		> 原因：源文件：
+		```C
+		led.bin : led.S
+		arm-linux-ld -Ttext 0x40000000 -o led.elf $^
+		```
+		> 解决：将led.S改为led.o
 
 + 链接脚本
 	1. 文件格式
@@ -358,7 +370,7 @@
 	
 	1. 常见问题
 		+ 问题：arm-linux-ld:tiny4412.lds:1: ignoring invalid character `\37777777757' in expression
-		解决：文件 *.lds不能是[UTF-8]格式，通过vim创建*.lds文件可以正常连接。打开后是[ANSI/OEM - GBK]格式。
+		> 解决：文件 *.lds不能是[UTF-8]格式，通过vim创建*.lds文件可以正常连接。打开后是[ANSI/OEM - GBK]格式。
 		
 + U-Boot
 	1. 烧录Uboot到SD卡
@@ -457,20 +469,22 @@
 			
 	+ 常见问题
 		+ 问题：在开发板中使用modinfo xxx.ko，提示：modinfo: can't open '/lib/modules/3.5.0-FriendlyARM/modules.dep': No such file or directory
-		解决：进入/lib/modules/3.5.0-FriendlyARM/,输入cp modules.dep.bb modules.dep
+		> 解决：进入/lib/modules/3.5.0-FriendlyARM/,输入cp modules.dep.bb modules.dep
 		
 		+ 问题：在开发板中，通过insmod可以成功加载驱动，通过rmmod不能卸载驱动，lsmod仍然可以找到驱动？
-		解决：编写一个rmmod的驱动程序，通过arm-linux-gcc -static -o rmmod rmmod.c 编译，将文件传输到开发板./sbin目录下。
+		> 解决：编写一个rmmod的驱动程序，通过arm-linux-gcc -static -o rmmod rmmod.c 编译，将文件传输到开发板./sbin目录下。
 			再次使用rmmod即可成功卸载驱动。
 		
 		+ 问题：编写led驱动，下载到开发板，使用insmod提示：insmod: can't insert 'bsp_led.ko': Device or resource busy
-		原因：1. 使用dmesg | tail -10，可以发现程序执行 gpio_reques() 失败，由于开发板默认已经配置led引脚，因此请求失败。
+		> 原因：
+			1. 使用dmesg | tail -10，可以发现程序执行 gpio_reques() 失败，由于开发板默认已经配置led引脚，因此请求失败。
 			2. 如果采用静态分配的ID，可能存在冲突。
-		解决：1. 去掉 gpio_reques() gpio_free()相关语句。
+		> 解决：
+			1. 去掉 gpio_reques() gpio_free()相关语句。
 			2. 修改主ID号，直至不产生冲突。
 		
 		+ 问题：测试LED驱动时，友善之臂已经在内核中添加LED驱动程序，以及应用程序，干扰了试验结果，怎么解决？
-		解决：进入 /etc/init.d，打开rc.S文件，找到语句/etc/rc.d/init.d/leds start 前面添加#，即可解决。
+		> 解决：进入 /etc/init.d，打开rc.S文件，找到语句/etc/rc.d/init.d/leds start 前面添加#，即可解决。
 
 + 概念
 	+ 设备类型
@@ -623,7 +637,7 @@
 		
 		+ 测试网络文件系统
 			1. 新建挂载文件系统的文件夹mkdir rootfs， chmod 777 /rootfs
-			 (2) 挂载网络文件系统:mount 192.168.2.150:/home/sy/Documents/rootfs_qtopia_qt4/ /home/sy/Documents/rootfs/
+			2. 挂载网络文件系统:mount 192.168.2.150:/home/sy/Documents/rootfs_qtopia_qt4/ /home/sy/Documents/rootfs/
 			3. 在目录/home/sy/Documents/rootfs 即可看到/home/sy/Documents/rootfs_qtopia_qt4/目录所有的文件了，
 				说明网络文件系统构建成功
 			4. 查看当前挂载的网络文件系统，nfsstat -m
@@ -667,7 +681,7 @@
 			3. 将编译出来的.ko文件，加载进内核，输入"insmod sebulk_dricer.ko"，如果不报错，输入lsmod，查看文件是否已经在
 				其中。
 			4. 由于动态链接库文件，在下次开机时需要再次加载，为了减少麻烦，可以进入路径“/etc/rc.d/rc.local”，在后面添加
-				insmod /home/sy/Documents/dnw/xxx/sebulk_dricer.ko，将动态链接库开机自动加载进内核。
+				insmod /home/sy/Documents/dnw/src/driver/secbulk.ko，将动态链接库开机自动加载进内核。
 			5. 再回到"dnw_src"文件夹，输入make可以编译出来dnw可执行文件，为了方便在任意目录使用./dnw发送数据，可以通过make install命令
 				将dnw文件传送到"usr/sbin"目录。
 		+ 在开发板进入u-boot时，按下空格键，输入dnw + 程序运行内存地址(与程序连接地址一致)，此时usb驱动自动加载，开发板等待接收文件...
@@ -681,7 +695,7 @@
 + MiniCOM
 	+ dmesg | grep tty
 
-+ secure CRT
++ secureCRT
 	+ 传输文件
 		+ Windows远程登录Linux服务器
 			1. 打开secure CRT软件，点击“快速连接”
@@ -707,13 +721,24 @@
 			2. 下载：指的是客户端从服务器接收文件。
 				在secure CRT中定位需要接收的文件的目录，输入"sz + 文件名"，即可收到服务器发送的文件。
 		
-		+ 显示中文乱码
-			1. 依次打开：[Options]-[Session Options]-[Appearance]-[Character encoding]，选择 UTF-8
-			2. 如果依然乱码：则编写代码的文本编辑器不是UTF-8进行编码，比如UltraEdit，依次进入[高级]-[设置]-[新文件创建]-[编码类型]-[将新文件创建成UTF-8]
-			3. 可能Linux使用的默认编码不是UTF-8。
-		
+	+ 显示中文乱码
+		1. 依次：[Options]-[Session Options]-[Appearance]-[Character encoding]，选择 UTF-8
+		2. 如果依然乱码：则编写代码的文本编辑器不是UTF-8进行编码，比如UltraEdit，依次进入[高级]-[设置]-[新文件创建]-[编码类型]-[将新文件创建成UTF-8]
+		3. 可能Linux使用的默认编码不是UTF-8。
+	
+	+ 快捷键
 		+ 快速切换标签页
 			1. Ctrl + Tab
+		
+	+ 小技巧
+		+ 在secureCRT中登录Fedora，怎么实现语法高亮？
+			1. 打开secureCTR，依次进入"Options-Session Options"，找到Emulation选项卡，
+				+ 选择Terminal为"Linux"
+				+ 选择ANSI Color
+				+ 选择Use color scheme
+			2. 找到Appearance选项卡，选择<Current color scheme>为 “Traditional”。
+			3. 找到ANSI Color选项卡，将<Use global ANSI color setting>去掉勾选，修改深蓝色为浅蓝色。
+		
 
 + FTP
 	简介：FTP可以方便的在主机和Linux服务器、Linux服务器和开发板之间传输文件。
@@ -760,20 +785,21 @@
 			
 	+ 常见问题：
 		+ 问题：FTP不能上传文件，提示“425 Can't open passive connection: Permission denied. Passive mode refused.”？
-		原因：FTP主动模式造成的。一般FTP默认为被动模式，这两种模式发起连接的方向截然相反，主动模式是从服务器端向客户端发起；
-		被动模式是客户端向服务器端发起连接，由于本地(客户端)存在防火墙，一般主动模式很难成功。
-		解决：在电脑端ftp窗口输入：
-		ftp>passive
-		passive mode off
-		
+		> 原因：FTP主动模式造成的。一般FTP默认为被动模式，这两种模式发起连接的方向截然相反，
+		主动模式是从服务器端向客户端发起；被动模式是客户端向服务器端发起连接，由于本地(客户端)存在防火墙，
+		一般主动模式很难成功。
+		> 解决：在电脑端ftp窗口输入：
+			ftp>passive
+			passive mode off
+
 		+ 问题：使用SecureCRT连接linux的ftp服务器，登录时间过长？
-		原因：DNS反向解析造成的。
-		解决：
-		1. 打开文件：`vim /etc/ssh/sshd_config`添加内容：`useDNS no`重启ftp服务器：`systemctl restart sshd.service`
-		2. 如果还不行，打开文件：`vim /etc/vsftpd/vsftpd.conf`，添加`reverse_lookup_enable=NO`，重启ftp服务器。
+		> 原因：DNS反向解析造成的。
+		> 解决：
+			1. 打开文件：`vim /etc/ssh/sshd_config`添加内容：`useDNS no`重启ftp服务器：`systemctl restart sshd.service`
+			2. 如果还不行，打开文件：`vim /etc/vsftpd/vsftpd.conf`，添加`reverse_lookup_enable=NO`，重启ftp服务器。
 		
 		+ 问题：不能使用root用户登录ftp？
-		  解决：
+	  	> 解决：
 			1. 打开文件`vim /etc/vsftpd/ftpusers`在root前面加#
 			2. 打开文件`vim /etc/vsftpd/user_list`在root前面加#
 			3. 输入`systemctl restart vsftpd.service`重启ftp服务器
@@ -832,46 +858,59 @@
 		3. 挂载U盘
 		等形式，将可执行文件传输到开发板。
 
-+ 步骤：
-	+ 解压缩包
-		+ 将"arm-linux-gcc-4.5.1-v6-vfp-20120301.tgz"拷贝到linux任意目录，输入
-		"tar xvzf arm-linux-gcc-4.5.1-v6-vfp-20101103.tgz –C /"。
-	
-		+ 添加环境变量
-			1. 输入"sudo vim /etc/profile"
-			2. 添加"export PATH=$PATH:/opt/FriendlyARM/toolschain/4.5.1/bin"
-			3. 输入"source /etc/profile"
-			4. 输入"echo $PATH"，如果显示上述路径则添加成功！
-	
-		+ 安装64位程序
-			1. 输入“sudo apt-get install lsb-core”
+	+ 步骤：
+		+ 解压缩包
+			+ 将"arm-linux-gcc-4.5.1-v6-vfp-20120301.tgz"拷贝到linux任意目录，输入
+			"tar xvzf arm-linux-gcc-4.5.1-v6-vfp-20101103.tgz –C /"。
 		
-		+ 查看gcc版本
-			1. 输入"arm-linux-gcc -v"
+			+ 添加环境变量
+				1. 输入"sudo vim /etc/profile"
+				2. 添加"export PATH=$PATH:/opt/FriendlyARM/toolschain/4.5.1/bin"
+				3. 输入"source /etc/profile"
+				4. 输入"echo $PATH"，如果显示上述路径则添加成功！
+		
+			+ 安装64位程序
+				1. 输入“sudo apt-get install lsb-core”
+			
+			+ 查看gcc版本
+				1. 输入"arm-linux-gcc -v"
 	
 + Fedora
 	+ 输入arm-linux-gcc -v，弹出错误：“bash: /opt/FriendlyARM/toolschain/4.5.1/bin/arm-linux-gcc: 
 	/lib/ld-linux.so.2: bad ELF interpreter: No such file or directory”，原因是64位的系统安装了32的软件，
 	需要安装相应的库，输入"yum install glibc.i686"
-	
-+ 中文输入法	
-	+ 安装步骤
-		+ 选择fcitx
-			1. 打开“语言支持”选项卡，选择键盘输入法系统：fcitx。如果没有此选项，打开终端，输入“im-config”，找到fcitx选项，点击OK。
-			2. 登出账户后，在“文本输入”选项卡即可看到中文输入法。	
 
 + Linux常见问题
 	+ 问题：在登录界面，输入用户名，密码正确，但是进不了系统？
-	原因：/etc/profile 文件内容错误。例如：输入export PATH = PATH:/xxxxxx，就会进不了系统，正确输入：export PATH = $PATH:/xxx
-	解决：因为进不了系统，可以通过SSH访问系统，但是输入命令都是无效的，
+	> 原因：/etc/profile 文件内容错误。例如：输入export PATH = PATH:/xxxxxx，就会进不了系统，正确输入：export PATH = $PATH:/xxx
+	> 解决：因为进不了系统，可以通过SSH访问系统，但是输入命令都是无效的，
 	可以输入：export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
 	临时设置环境变量，便可以正常进入系统了。
+	
+	+ ubuntu怎么安装中文输入法？
+		1. 打开“语言支持”选项卡，选择键盘输入法系统：fcitx。如果没有此选项，打开终端，输入“im-config”，找到fcitx选项，点击OK。
+		2. 登出账户后，在“文本输入”选项卡即可看到中文输入法。	
+		
+	+ fedora怎么设置开机自启动程序？
+		1. 参考 http://www.linuxdiyf.com/linux/12669.html
+		2. 命令行输入 `vim /usr/lib/systemd/system/rc-local.service` 添加语句：
+		```C
+		[Install]
+		WantedBy=multi-user.target
+		```
+		3. 输入 `systemctl enable rc-local.service`
+		4. 在 `/etc/rc.d/`目录下创建文件`rc.local`，内容如下：
+		```C
+		#!/bin/bash
+
+		# 下面添加开机自启动脚本
+		```
 
 + Tiny4412常见问题
 	+ 动态链接库丢失
 		+ 问题：在开发板上运行可执行程序，BASH提示："No such file or directory"？
-		原因：缺少动态链接库(.so)。
-		解决：
+		> 原因：缺少动态链接库(.so)。
+		> 解决：
 			1. 输入命令"readelf -a + [可执行文件]"，
 				屏幕打印："[Requesting program interpreter: /lib/ld-linux.so.3]"。可见缺少“ld-linux.so.3”库文件。
 			2. 参考博文"http://blog.csdn.net/harry_helei/article/details/5740456"
@@ -889,31 +928,33 @@
 				
 	+ Uboot不能成功进入
 		+ 问题：将Uboot烧录到SD后，串口打印OK，并没有打印Uboot信息？
-		原因：由于友善之臂更换了eMMC，因此需要使用新的Uboot。
-		解决：使用名称："uboot_tiny4412_0929.tar.gz"的Uboot
+		> 原因：由于友善之臂更换了eMMC，因此需要使用新的Uboot。
+		> 解决：使用名称："uboot_tiny4412_0929.tar.gz"的Uboot
 	
 	+ 无法识别SD读卡器	
 		+ 问题：使用“fdisk -l”命令无法侦测SD读卡器？
-		原因：
-		1. fedora安装在虚拟机VMware中，插入U盘后，电脑端可以显示U盘，虚拟机右下角可以检测到U盘插入。
-		2. 使用命令"fdisk -l"无法检测到U盘。
-		3. 使用“lsusb”也未找到设备。
-		4. 将虚拟机“设置-USB控制器”，设置为USB兼容性：USB3.0依然没用
-		5. 通过点击“虚拟机-可移动设备-U盘名”，点击“连接”，虚拟机提示USB驱动错误。
-		6. 格式化U盘，无效。
-		解决：通过安装新版本的虚拟机“VMware-workstation-full-12.5.0-4352439.exe”，重新插入U盘，
+		> 原因：
+			1. fedora安装在虚拟机VMware中，插入U盘后，电脑端可以显示U盘，虚拟机右下角可以检测到U盘插入。
+			2. 使用命令"fdisk -l"无法检测到U盘。
+			3. 使用“lsusb”也未找到设备。
+			4. 将虚拟机“设置-USB控制器”，设置为USB兼容性：USB3.0依然没用
+			5. 通过点击“虚拟机-可移动设备-U盘名”，点击“连接”，虚拟机提示USB驱动错误。
+			6. 格式化U盘，无效。
+		> 解决：
+			通过安装新版本的虚拟机“VMware-workstation-full-12.5.0-4352439.exe”，重新插入U盘，
 			点击“虚拟机-可移动设备-U盘名”，点击“连接”，此时电脑端U盘消失，使用“fdisk -l”检测到U盘！
 			再次插拔U盘后，电脑端不再显示U盘了。
-		总结：U盘只能被一台主机使用，如果想在虚拟机使用，必须通过虚拟机设置连接U盘！
+		> 总结：
+			U盘只能被一台主机使用，如果想在虚拟机使用，必须通过虚拟机设置连接U盘！
 		
 	+ 问题：使用SD-Flasher.exe小软件无法 ReLayout？
-	解决：点击ReLayout按钮，提示失败，再次点击ReLayout按钮即可成功！
+	> 解决：点击ReLayout按钮，提示失败，再次点击ReLayout按钮即可成功！
 	
 	+ 问题：输入su时，提示su: must be suid to work properly？
-	原因：嵌入式文件系统一般用户执行su root切换根用户提示错误：
-			su: must be suid to work properly
-	解决：chmod 4755 ./bin/busybox。
-	解释：chmod 4755与chmod 755 的区别在于开头多了一位，这个4表示其他用户执行文件时，具有与所有者相当的权限。
+	> 原因：嵌入式文件系统一般用户执行su root切换根用户提示错误：
+		su: must be suid to work properly
+	> 解决：chmod 4755 ./bin/busybox。
+	> 解释：chmod 4755与chmod 755 的区别在于开头多了一位，这个4表示其他用户执行文件时，具有与所有者相当的权限。
 		
 
 + Tiny4412裸机编程
@@ -974,6 +1015,21 @@
 		esac
 		```
 	
++ Tomcat
+	+ 安装
+		+ 进入网站 http://tomcat.apache.org/ 下载文件Tomcat8，找到 Binary Distributions 菜单下的Core：选择 tar.gz (pgp, md5, sha1)下载。
+		+ 通过ssh传输到Linux /usr/local/目录，解压到当前目录
+		+ 修改文件名：mv apache-tomcat-8.0.39 tomcat8
+		+ 进入/bin目录，执行 ./startup.sh
+		+ 输入 ps -ef | grep tomcat，查看是否进程已经启动。
+		+ 在Windows浏览器中运行，`http://<Linux IP>:8080`，如果可以访问表示启动Tomcat成功！
+		
+	+ 开机自启动
+		+ 打开`vim /etc/rc.d/rc.local`，添加：
+		```C
+		export JRE_HOME=/usr/lib/jvm/jdk1.7.0.79
+		/usr/local/tomcat8/bin/startup.sh
+		```
 		
 
 
