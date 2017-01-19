@@ -127,8 +127,9 @@
 			
 		+ 查看发行版本
 			+ cat /etc/issue
+			+ lsb_release -a
 		
-			+ 打印开机信息
+		+ 打印开机信息
 				1. dmesg
 		
 		+ 驱动模块
@@ -1030,6 +1031,35 @@
 		export JRE_HOME=/usr/lib/jvm/jdk1.7.0.79
 		/usr/local/tomcat8/bin/startup.sh
 		```
+		注意：在`etc/profile`文件中已经设置JRE_HOME变量，在这里仍然需要再设置一次，因为 profile文件在用户登录后才起作用，
+		而开机自启动程序在用户登录之前就已经启动了。
 		
-
++ Mysql
+	+ 安装
+		+ 进入网站 https://www.mysql.com/ ，选择 Downloads->Community-> MySQL Community Server->Fedora
+		选择Fedora 24 (x86, 64-bit), RPM Bundle，下载到本地。
+		+ 传输到linux，解压缩 ` tar xf mysql-5.7.17-1.fc24.x86_64.rpm-bundle.tar`
+		+ 输入 `rpm -ivh *`将所有文件一起安装
+		+ 如果遇到依赖库问题，通过 `yum install + <库名>` 安装
+		+ 安装完成
+		+ 输入 `systemctl status mysqld.service` 查看Mysql状态
+		+ 输入 `systemctl start mysqld.service` 启动 Mysql服务
+		
+	+ 问题
+		+ 问题：`ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: NO)`
+		> 解决：
+			1. 输入 `vim /etc/my.cnf`，在文件后面添加 `skip-grant-tables`，可以免密码登录。
+			2. 输入 `systemctl restart mysqld.service`重启Mysql服务
+			3. 输入 `mysql`，进入mysql
+			4. 输入 `USE mysql`
+			5. 输入 `update mysql.user set authentication_string=password('新密码') where user='root'; `
+			6. flush privileges;
+			7. quit
+			8. 去掉 `skip-grant-tables` 
+			9. 输入 `mysql -u root -p`，登录mysql。 其中[-u]代表user，[-p]代表password 
+		
+		+ 问题：`输入：mysql> show databases；`,弹出`ERROR 1820 (HY000): You must reset your password using ALTER USER statement before executing this statement.`
+		> 解决：
+			1. 输入 `set password=password('密码<需要8位以上，包含大小写字母、数字、符号>');`
+			
 
