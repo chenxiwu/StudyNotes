@@ -79,6 +79,10 @@
 					zip 目标文件名 源文件名
 				2. 解压缩文件
 					unzip 源文件名
+
+			+ unrar
+				1. 解压缩
+					`unrar x <filename>：`解压到当前路径
 				
 		+ 增加用户
 			+ 新建用户
@@ -253,7 +257,20 @@
 		+ 查看系统服务
 			+ 列出所有系统服务：chkconfig --list
 			+ 添加系统服务： chkconfig --add
-			
+		
+		+ file
+			+ `file filename`：查看文件类型及信息
+		
+		+ 回到上一次操作的目录
+			+ cd -			
+		
+		+ 计算文件的行号
+			+ 列出文件内容，添加行号：nl + filename
+		
+		+ shift
+			+ 命令行参数移位：执行一次shift操作，参数列表向左移动一位，
+			同时参数个数减一 
+			格式：shift n #n表示移位n次
 	
 + Linux-fedora
 	+ 安装软件
@@ -285,85 +302,6 @@
 		1. yum whatprovides + 缺少的库
 			例如：yum whatprovides libz.so.1
 
-+ Makefile
-	简介：Makefile可以打包处理程序，包括：编译、连接。
-	+ 规则
-		1 格式
-			目标[target] ... : 依赖[prerequisites] ...
-			<TAB>命令[command]
-			+ target：表示转换的目标文件
-			+ prerequisites：表示依赖文件
-			+ command：表示转换的命令
-	
-	+ 命令
-		1. 变量
-			+ 声明变量：var = main.o
-			+ 使用变量：$(var)或者${var}
-	
-		2. 参数
-			+ -E：预处理后即停止，不进行编译，生成.i文件。
-			+ -S：编译后即停止，生成.s文件。
-			+ -c：编译指令，不连接，生成.o文件
-			+ -o：连接指令，生成可执行文件。	
-			+ -Wall：打印警告信息。
-			+ -I：将指定路径作为第一个头文件路径。
-			+ -g：产生调试信息
-			+ -O：优化选项[-O1,-O2,-O3]，一般使用-O2。-O0代表不优化。
-			+ -l：用来指定程序要链接的库
-			+ -L：用来制指定库文件所在的目录名
-			+ -C：切换到指定目录再执行 make 过程，makefile 在这个指定目录里面。
-	
-		3. 关键字
-			+ wildcard：扩展通配符
-				在Makefile规则中，通配符*. 会被自动展开。但在变量的定义和函数引用时，通配符将失效。
-				这种情况下如果需要通配符有效，就需要使用函数“wildcard”。
-				一般我们可以使用“$(wildcard *.c)”来获取工作目录下的所有的.c文件列表。
-			+ notdir：去除路径
-			+ patsubst：替换通配符
-				格式：$(patsubst <pattern>,<replacement>,<text> ) 
-				功能：查找<text>中的单词单词以“空格”、“Tab”或“回车”“换行”分隔. 是否符合模式<pattern>，
-					如果匹配的话，则以<replacement>替换。这里，<pattern>可以包括通配符“%”，表示任意长度的字串。
-					如果<replacement>中也包含“%”，那么，<replacement>中的这个“%”将是<pattern>中的那个“%”所代表的字串。
-					可以用“\”来转义，以“\%”来表示真实含义的“%”字符. 
-					返回：函数返回被替换过后的字符串。
-				示例：
-					$(patsubst %.c,%.o,x.c.c bar.c)
-					把字串“x.c.c bar.c”符合模式[%.c]的单词替换成[%.o]，返回结果是“x.c.o bar.o”
-		+ 符号
-			1. $@ 表示目标文件
-			2. $^ 表示所有依赖文件一般在生成目标文件时使用. 
-			3. $< 表示第一个依赖文件一般在生成中间文件时使用. 
-	
-		4. 符号
-			+ =  是最基本的赋值，其值取决于整个Makefile展开后，变量的值。
-			+ := 是覆盖之前的值，其值取决于它在Makefile所在的位置。
-			+ ?= 是如果没有被赋值过就赋予等号后面的值
-			+ += 是添加等号后面的值	
-	
-		5. 扩展
-			+ -std=gnu99，使用基于GNU扩展的标准
-	
-	+ 编译
-		1. 命令：arm-linux-gcc
-			+ 针对arm平台进行编译
-		2. 例程：
-			+ arm-linux-gcc -o main main.c
-			+ arm-linux-gcc main.c -o main
-	
-	+ 连接
-		1. 命令：arm-linux-ld
-		2. 针对arm平台的连接
-		3. 可以添加-T选项，指定连接地址信息，如arm-linux-ld -Ttext 	0x40000000 -o main.c main.elf
-
-	+ 常见错误
-		1. 问题：编译器显示错误"led.S: file not recognized: File format not recognized"？
-		> 原因：源文件：
-		```C
-		led.bin : led.S
-		arm-linux-ld -Ttext 0x40000000 -o led.elf $^
-		```
-		> 解决：将led.S改为led.o
-
 + 链接脚本
 	1. 文件格式
 		+ 文件名：*.lds
@@ -372,55 +310,7 @@
 	1. 常见问题
 		+ 问题：arm-linux-ld:tiny4412.lds:1: ignoring invalid character `\37777777757' in expression
 		> 解决：文件 *.lds不能是[UTF-8]格式，通过vim创建*.lds文件可以正常连接。打开后是[ANSI/OEM - GBK]格式。
-		
-+ U-Boot
-	1. 烧录Uboot到SD卡
-		+ 步骤
-			1. 将文件"uboot_tiny4412_0929.tar.gz"，发送到虚拟机中的Linux中。
-			2. 解压缩文件：tar zxf uboot_tiny4412_0929.tar.gz
-			3. 由于需要用到硬件真实的地址，需要关闭MMU。打开文件：vim ./include/configs/tiny4412.h，将
-			#define CONFIG_ENABLE_MMU 修改为 #undef CONFIG_ENABLE_MMU
-			4. 修改Uboot的连接地址。打开文件vim ./board/samsung/tiny4412/config.mk，将
-			CONFIG_SYS_TEXT_BASE = 0xC3E00000修改为0x43E00000
-			5. 回到主目录：make tiny4412_config
-			5. make  ，生成文件u-boot.bin
-			6. 进入目录：cd sd_fuse，输入make，生成mkbl2文件
-			7. 进入目录：cd tiny4412，将SD卡插入电脑，输入fdisk -l，出现设备标识，sdb1
-			8. 输入 ./sd_fusing.sh /dev/sdb
-		
-	2. 烧录Uboot到eMMC
-		+ 擦除eMMC
-			1. 首先U-Boot需要能够从SD卡启动，进入命令行。
-			2. 输入 mmcinfo0，则打印SD卡信息。
-			3. 输入 mmcinfo1，则打印eMMC信息。
-			3. 输入 fdisk -p 0，显示SD卡只有一个分区。
-			4. 输入 fdisk -p 1，显示eMMC有4个分区。
-				显示partion 1:407 2:608 3:2057 4:520
-				分别表示：分区1 是FAE分区， 分区2 是给system的，分区3是user-data, 分区4 是 cache。
-			5. 输入 fdisk -c 1 608 2057 520，下面开始正式格式化。
-			6. 输入 fatformat mmc 1:1，格式化第一个分区为fat32格式
-			7. 输入 ext3format mmc 1:2，格式化第二个分区为ext3格式
-			8. 输入 ext3format mmc 1:3，格式化第三个分区为ext3格式
-			9. 输入 ext3format mmc 1:4，格式化第四个分区为ext3格式
 			
-		+ 烧录U-Boot到eMMC
-			1. 输入 emmc open 1，打开eMMC设备第一个分区。
-			2. dnw 70003000，注意该地址范围：40000000 ~ 7FFFFFFF，共1G地址空间，该地址为物理内存地址，在MMU关闭的情况下。
-			3. 在Linux主机中输入 dnw E4412_N.bl1.bin，传送该文件到内存地址70003000.
-			4. U-Boot收到数据后，输入 mmc write 1 0x70003000 0 0x10，表示：从内存地址0x70003000开始读取16块1块=512字节. ，
-				写入到设备1已知是eMMC. 中，起始地址为0，写入大小0x10(16)块。
-			5. 在Linux主机中输入 dnw bl2.bin，传送该文件到内存地址70003000.
-			6. U-Boot收到数据后，输入 mmc write 1 0x70003000 0x10 0x1C，表示：从内存地址0x70003000开始读取28块1块=512字节. ，
-				写入到设备1已知是eMMC. 中，起始地址为0x10，写入大小0x1C(14K = 28块 = 0x1C)块。
-			7. 在Linux主机中输入 dnw u-boot.bin，传送该文件到内存地址70003000.
-			8. U-Boot收到数据后，输入 mmc write 1 0x70003000 0x30 0x21D，表示：从内存地址0x70003000开始读取506块实际大小约252K，按照253K拷贝数据. ，
-				写入到设备1已知是eMMC. 中，起始地址为0x30由于第二块需要占用空间16K，8+16=24K. ，写入大小0x21D(541)块。
-			9. 在Linux主机中输入 dnw E4412_tzsw.bin，传送该文件到内存地址70003000.
-			10. U-Boot收到数据后，输入 mmc write 1 0x70003000 0x2C0 0xB8，表示：从内存地址0x70003000开始读取184块实际大小92K. ，
-				写入到设备1已知是eMMC. 中，起始地址为0x2C0由于第三块需要占用空间253K，8+16+253=277K. ，写入大小0xB8(184)块。
-			11. 至此，数据写入完毕。输入emmc close 1，关闭设备。
-		
-		
 + Kconfig
 	1. Kconfig是内核的配置界面的源文件，通过配置该文件可以控制配置界面的显示
 		+ 符号
@@ -982,39 +872,6 @@
 		1. 重定位：程序的连接地址和烧录地址可以不一致，进入BootLoader1后，处理器从SD卡将BootLoader2的数据拷贝到指定地址，并跳转到该地址运行，
 			如果程序的连接地址与该地址不一致，就需要重定位过程，将当前物理地址的程序搬运到连接地址处，然后跳转到连接地址运行。
 		2. 在Makefile里，源文件的放置位置决定了连接时在文本段的位置。我们的程序一般从_start开始运行，因此需要将startup.S放在首位置。		
-
-
-+ SHELL
-	+ if语句
-		格式：
-		```C
-		if [ command ]
-		then
-			语句1
-		else
-			语句2
-		fi
-		```
-		解释：
-		1. 如果 command == 0，则执行then，否则执行else。和c语言正好相反。
-		2. 如果“条件”存在多条语句，则相当于and连接。
-		例程：
-		```C
-		if [ ! -d "$abc" ];
-		then
-		mkdir "$abc"
-		fi
-		```
-	+ case语句
-		格式：
-		```C
-		case $变量 in
-		语句1)
-		;;
-		语句2)
-		;;
-		esac
-		```
 	
 + Tomcat
 	+ 安装
