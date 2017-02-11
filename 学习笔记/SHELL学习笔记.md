@@ -155,6 +155,7 @@
 		```
 		解释：
 		大部分情况下，可以使用[ ... ]进行条件测试语句
+		+ 文件表达式
 		`-e filename` 如果 filename存在，则为真
 		`-d filename` 如果 filename为目录，则为真 
 		`-f filename` 如果 filename为常规文件，则为真
@@ -162,12 +163,17 @@
 		`-r filename` 如果 filename可读，则为真 
 		`-w filename` 如果 filename可写，则为真 
 		`-x filename` 如果 filename可执行，则为真
-		`-s filename` 如果文件长度不为0，则为真
+		`-s filename` 如果文件非空，则为真
 		`-h filename` 如果文件是软链接，则为真
-		`"$a" == "$b"`如果a和b相等，则为真
-		`-n "$var"`   判断 $var 变量是否有值
-		`filename1 -nt filename2` 如果 filename1比filename2新，则为真。
-		`filename1 -ot filename2` 如果 filename1比 filename2旧，则为真。
+
+		+ 字符串变量表达式
+		`[ $a == $b ]` 如果a和b相等，则为真
+		`[ -n $string ]` 如果字符串非空，则返回true
+		`[ -z $string ]` 如果字符串为空，则返回true
+		`[ filename1 -nt filename2 ]` 如果 filename1比filename2新，则为真。
+		`[ filename1 -ot filename2 ]` 如果 filename1比 filename2旧，则为真。
+
+		+ 整数变量表达式
 		`-eq` 等于
 		`-ne` 不等于
 		`-gt` 大于

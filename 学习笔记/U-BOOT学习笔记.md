@@ -58,3 +58,116 @@
 				写入到设备1已知是eMMC. 中，起始地址为0x2C0由于第三块需要占用空间253K，8+16+253=277K. ，写入大小0xB8(184)块。
 			11. 至此，数据写入完毕。输入emmc close 1，关闭设备。
 	
++ 移植U-BOOT
+	> 在三星提供的源码基础上移植U-BOOT到友善之臂的Tiny4412开发板。文件名：`u-boot-samsung-dev.rar`
+	+ 移植步骤[带有mkconfig文件]：
+		1. 将文件`u-boot-samsung-dev.rar`拷贝到linux中
+		
+		2. 输入 `unrar x u-boot-samsung-dev.rar`解压源码。
+		
+		3. 进入主目录中，找到 `boards.cfg` 文件，添加以下内容：
+		` tiny4412                     arm         armv7       tiny4412            samsung        exynos`
+		这个文件就是开发板的配置文件，格式为： `Target  Architecture  CPU  Board [VENDOR] [SOC]`
+		
+		4. 进入到 `board/samsung` 目录，拷贝文件 `[root@SY samsung]# cp -r smdk4212/ tiny4412`
+		
+		5. 进入到 tiny4412/ 目录，将所有的smdk4212改为tiny4412
+		
+		6. 输入 `make tiny4412_config`，提示：
+		```C
+		[root@SY u-boot_tiny4412_170205]# make tiny4412_config
+		make: execvp: /home/sy/Documents/u-boot_tiny4412_170205/mkconfig: Permission denied
+		Makefile:551: recipe for target 'tiny4412_config' failed
+		make: *** [tiny4412_config] Error 127
+		```
+		说明mkconfig文件没有可执行权限。
+		输入`[root@SY u-boot_tiny4412_170205]# chmod 755 mkconfig`
+		输入 `make tiny4412_config`提示：
+		```C
+		[root@SY u-boot_tiny4412_170205]# make tiny4412_config
+		Configuring for tiny4412 board...
+		```
+		配置完毕。
+		
+		7. 输入 `make` 提示：
+		```C
+		/home/sy/Documents/u-boot_tiny4412_170205/include/config.h:4:30: 
+		fatal error: configs/tiny4412.h: No such file or directory compilation terminated.
+		```
+		进入目录 `include/configs/`，输入：`[root@SY configs]# cp smdk4412.h tiny4412.h`
+		将系统频率改为：
+		```C
+		/* APLL : 1.4GHz */
+ 		#define CONFIG_CLK_ARM_1200_APLL_1400
+		```
+		8. 输入 `make` 提示：
+		```C
+		make: execvp: /home/sy/Documents/u-boot_tiny4412_170205/tools/setlocalversion
+		: Permission denied
+		```
+		输入 `[root@SY u-boot_tiny4412_170205]# chmod 755 tools/setlocalversion `增加可执行权限。
+		
+		9. 输入 `make` 提示：
+		```C
+		[root@SY u-boot_tiny4412_170205]# make
+		Generating include/generated/generic-asm-offsets.h
+		tools/scripts/make-asm-offsets lib/asm-offsets.s
+		include/generated/generic-asm-offsets.h
+		make: execvp: tools/scripts/make-asm-offsets: Permission denied
+		Makefile:506: recipe for target 'include/generated/generic-asm-offsets.h' failed
+		make: *** [include/generated/generic-asm-offsets.h] Error 127
+		```
+		输入 `[root@SY u-boot_tiny4412_170205]# chmod 755 tools/scripts/make-asm-offsets`
+		10. 输入 `make` 提示：
+				
+
+
+
+
+		因为没有指定交叉编译器。打开主目录的Makefile文件，添加：
+		```C  
+		 158 # set default to nothing for native builds
+		 159 ifeq ($(HOSTARCH),$(ARCH))
+		 160 CROSS_COMPILE ?=
+		 161 endif
+		 162 
+		 163 CROSS_COMPILE ?= arm-linux-
+		```
+		继续编译...
+		
+
+
+		1. 根目录的mkconfig就是某一块开发板的配置文件。
+			使用 ./mkconfig + 参数 可以生成开发板对应的配置文件。
+		2. 参数格式参考mkconfig提示：
+			`Parameters:  Target  Architecture  CPU  Board [VENDOR] [SOC]`
+			其中在board.cfg文件中已经列举出来可以直接使用。
+		如：` ./mkconfig smdk4212 arm armv7 smdk4212 samsung exynos`
+		
+
+	+ 移植步骤[带有Kbuild文件，类似Linux内核可配置]：
+		1. 在目录 `board/samsung/`目录中，使用goni开发板。
+			对应的配置文件在 `configs/s5p_goni_defconfig`。
+		2. 在U-BOOT根目录执行`make s5p_goni_defconfig`，将在根目录生成.config文件
+		3. 执行`make`开始编译
+		4. 出现错误：
+		`lib/asm-offsets.c:1:0: error: bad value (armv5) for -march= switch`，
+		因为没有指定交叉编译器。打开主目录的Makefile文件，添加：
+			```C  
+			243 # set default to nothing for native builds
+			244 ifeq ($(HOSTARCH),$(ARCH))
+			245 CROSS_COMPILE ?=
+			246 endif
+			247 
+			248 CROSS_COMPILE ?= arm-linux-`
+			```
+			继续编译...
+		5. 出现错误：
+		```C
+		./scripts/dtc-version.sh: line 17: dtc: command not found
+		./scripts/dtc-version.sh: line 18: dtc: command not found
+		*** Your dtc is too old, please upgrade to dtc 1.4 or newer
+		Makefile:1371: recipe for target 'checkdtc' failed
+		```
+		解决：输入`apt-get install libssl-dev`或者进入网站 https://centos.pkgs.org/6/epel-i386/dtc-1.4.0-1.el6.i686.rpm.html
+		下载安装包安装。继续编译...完成！

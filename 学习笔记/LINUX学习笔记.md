@@ -919,4 +919,8 @@
 		> 解决：
 			1. 输入 `set password=password('密码<需要8位以上，包含大小写字母、数字、符号>');`
 			
++ 知识点
+	+ `dd iflag=dsync oflag=dsync if=./E4412_D.bl1.bin of=$1 seek=$signed_bl1_position`：
+		1. 表示从if指定的位置，读取内容到缓冲区。然后写入到of指定的设备的seek偏移量的位置。
+
 
