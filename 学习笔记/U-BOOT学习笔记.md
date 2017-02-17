@@ -16,15 +16,17 @@
 		+ 步骤
 			1. 将文件"uboot_tiny4412_0929.tar.gz"，发送到虚拟机中的Linux中。
 			2. 解压缩文件：tar zxf uboot_tiny4412_0929.tar.gz
-			3. 由于需要用到硬件真实的地址，需要关闭MMU。打开文件：vim ./include/configs/tiny4412.h，将
+			3. [裸机执行]由于需要用到硬件真实的地址，需要关闭MMU。打开文件：
+			vim ./include/configs/tiny4412.h，将
 			#define CONFIG_ENABLE_MMU 修改为 #undef CONFIG_ENABLE_MMU
-			4. 修改Uboot的连接地址。打开文件vim ./board/samsung/tiny4412/config.mk，将
+			4. [裸机执行]修改Uboot的连接地址。打开文件vim 
+			./board/samsung/tiny4412/config.mk，将
 			CONFIG_SYS_TEXT_BASE = 0xC3E00000修改为0x43E00000
 			5. 回到主目录：make tiny4412_config
-			5. make  ，生成文件u-boot.bin
-			6. 进入目录：cd sd_fuse，输入make，生成mkbl2文件
-			7. 进入目录：cd tiny4412，将SD卡插入电脑，输入fdisk -l，出现设备标识，sdb1
-			8. 输入 ./sd_fusing.sh /dev/sdb
+			6. make  ，生成文件u-boot.bin
+			7. 进入目录：cd sd_fuse，输入make，生成mkbl2文件
+			8. 进入目录：cd tiny4412，将SD卡插入电脑，输入fdisk -l，出现设备标识，sdb1
+			9. 输入 ./sd_fusing.sh /dev/sdb
 		
 	2. 烧录Uboot到eMMC
 		+ 擦除eMMC
