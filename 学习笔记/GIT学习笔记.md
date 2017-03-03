@@ -68,6 +68,11 @@
 		rebase 与 merge 很相似都是合并代码，merge操作会产生一个新的commit。而rebase则不会产生新的commit，
 		他会将你的代码插入到服务器最新的commit的后面，看起来更加自然。
 
+	+ tag 打标签
+		1. 添加标签： git tag tagName
+		2. 删除标签： git tag -d tagName
+		3. 查看标签： git tag
+
 + 过滤器
 	+ 忽略文件夹
 		+ 新建文件 .gitignore
