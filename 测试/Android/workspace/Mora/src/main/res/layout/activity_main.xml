@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:padding="50dp"
+    tools:context="com.example.sy.mora.MainActivity">
+
+    <TextView
+        android:id="@+id/moraTextViewId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="猜拳游戏"
+        android:textColor="#000000"
+        android:layout_centerHorizontal="true" />
+
+    <ImageView
+        android:id="@+id/beautyImageViewId"
+        android:layout_width="128dp"
+        android:layout_height="128dp"
+        android:src="@drawable/beauty"
+        android:scaleType="fitCenter"
+        android:layout_below="@id/moraTextViewId" />
+
+    <ImageView
+        android:id="@+id/machineImageViewId"
+        android:layout_width="128dp"
+        android:layout_height="128dp"
+        android:src="@drawable/machine"
+        android:scaleType="fitCenter"
+        android:layout_below="@+id/moraTextViewId"
+        android:layout_toRightOf="@id/beautyImageViewId" />
+
+    <RadioGroup
+        android:id="@+id/leftRadioGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/beautyImageViewId" >
+
+        <RadioButton
+            android:id="@+id/leftStoneRadioButtonId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="石头"/>
+
+        <RadioButton
+            android:id="@+id/leftScissorRadioButtonId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="剪刀" />
+
+        <RadioButton
+            android:id="@+id/leftClothRadioButtonId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="布" />
+    </RadioGroup>
+
+    <RadioGroup
+        android:id="@+id/rightRadioGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/beautyImageViewId"
+        android:layout_alignLeft="@id/machineImageViewId">
+
+        <RadioButton
+            android:id="@+id/rightStoneRadioButtonId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="石头"/>
+
+        <RadioButton
+            android:id="@+id/rightScissorRadioButtonId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="剪刀" />
+
+        <RadioButton
+            android:id="@+id/rightClothRadioButtonId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="布" />
+    </RadioGroup>
+
+    <Button
+        android:id="@+id/confirmButtonId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/leftRadioGroup"
+        android:text="确  定" />
+
+    <TextView
+        android:id="@+id/resultTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="结果："
+        android:layout_below="@id/confirmButtonId" />
+
+    <TextView
+        android:id="@+id/testResultTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="测试结果："
+        android:layout_below="@id/confirmButtonId"
+        android:layout_alignLeft="@id/machineImageViewId"  />
+</RelativeLayout>

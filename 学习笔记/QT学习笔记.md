@@ -41,6 +41,11 @@
 	+ 资源图片在菜单栏不显示
 		1. 删除工程下面整个DEBUG文件夹，重新运行
 
+	+ 代码补全
+		1. 默认 QT Creator 使用快捷键：`Ctrl + Space`，和输入法产生冲突。
+		进入 “工具” -- “选项” -- “环境” -- “键盘” -- “Conplete This”，
+		使用宏录制方式，按下 `Alt + /`
+
 + 小技巧
 	+ 给应用程序添加图标
 		1. 创建一个项目后，如果已经编译运行，则需要先删除 Debug、Release 文件夹，否则将看不到图标。
@@ -60,5 +65,21 @@
 	
 	+ 问题：QT5中文乱码
 	> 原因：字符编码问题
-	> 解决：如果使用中文常量：使用 `QStringLiteral("大水猫")`
-	如果是引用字符串变量，使用 `QString::fromLocal8Bit("大水猫");`
+	> 解决：
+	1. 点击 “工具” -- “选项” -- “文本编辑器” -- “行为” -- “文件编码”，
+	将UTF-8 BOM项修改为 “如果编码是UTF-8则添加”
+	2. 如果使用中文常量：使用 `QStringLiteral("大水猫")`
+	3. 如果是引用字符串变量，使用 `QString::fromLocal8Bit("大水猫");`
+
+	+ 问题：QT Creator左侧的 “帮助、运行、调试 等快捷菜单”消失了？
+	+ 解决：
+	1. 进入目录：C:\Users\SY\AppData\Roaming，找到QTProject文件夹，整个删掉，重新打开QT Creator。
+
+	+ 问题： 连接MySql数据库，使用Qt命令行，提示：`QSqlDatabase: QMYSQL driver not loaded`?
+	+ 解决：
+	1. 进入 MySQL的安装目录：`C:\Program Files\MySQL\MySQL Server 5.7\lib`，拷贝文件`libmysql.dll`
+	到QT的安装目录：`C:\Qt\Qt5.8.0\5.8\msvc2015_64\bin`
+	2. 添加环境变量：`C:\Program Files\MySQL\MySQL Server 5.7\bin`
+
+	+ 问题：连接MySQL，`db.setDatabaseName("test1");` 使用`db.open()`返回false？
+	+ 原因：MySQL并没有名叫 `test1` 的数据库。手动创建一个test1数据库，重新连接。

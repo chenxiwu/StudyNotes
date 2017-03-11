@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/textViewId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="12dp"
+        android:text="按下按钮控制LED显示："/>
+
+    <CheckBox
+        android:id="@+id/led1CheckBoxId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textViewId"
+        android:text="LED1"/>
+
+    <CheckBox
+        android:id="@+id/led2CheckBoxId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/led1CheckBoxId"
+        android:text="LED2"/>
+
+    <CheckBox
+        android:id="@+id/led3CheckBoxId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/led2CheckBoxId"
+        android:text="LED3"/>
+
+    <CheckBox
+        android:id="@+id/led4CheckBoxId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/led3CheckBoxId"
+        android:text="LED4"/>
+
+    <CheckBox
+        android:id="@+id/ledAllCheckBoxId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/led4CheckBoxId"
+        android:layout_marginTop="12dp"
+        android:text="全选"/>
+
+    <TextView
+        android:id="@+id/cutLineId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="============================================"
+        android:layout_below="@id/ledAllCheckBoxId"/>
+
+    <CheckBox
+        android:id="@+id/flowLedId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/cutLineId"
+        android:layout_marginTop="12dp"
+        android:text="流水灯"/>
+
+</RelativeLayout>

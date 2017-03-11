@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Tiny4412</string>
+    <string name="page_menu">菜单</string>
+    <string name="page_led_name">LED</string>
+</resources>
