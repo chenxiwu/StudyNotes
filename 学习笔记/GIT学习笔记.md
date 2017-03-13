@@ -27,7 +27,7 @@
 		输入git remote -v，显示origin
 	
 	+ 推送到远端仓库
-		1. 输入 git push origin master		
+		1. 输入 git push -u origin master		
 	
 	+ 注意：创建远程地址，尽量使用HTTP地址，GIT地址经常挂掉，出现"fatal: Unable to look up github.com:dasuimao (port 9418) "错误。
 			
