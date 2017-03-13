@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -29,7 +29,6 @@ SOURCES += \
 
 HEADERS  += \
     INC/mainwindow.h \
-    LIB/include/curl/curl.h
 
 FORMS    += mainwindow.ui
 
@@ -37,10 +36,11 @@ INCLUDEPATH += \
     $$PWD/INC/ \
     $$PWD/LIB/include/curl/
 
-LIBS	    += \
-    "$$PWD/LIB/libcurl.dll"
+#LIBS	    += \
+#    "$$PWD/LIB/libcurl.dll"
 
-DISTFILES += \
-    LIB/include/curl/curlbuild.h.cmake \
-    LIB/include/curl/Makefile.am \
-    LIB/include/curl/Makefile.in
+RESOURCES += \
+    Res/res.qrc
+
+RC_ICONS = app.ico
+
