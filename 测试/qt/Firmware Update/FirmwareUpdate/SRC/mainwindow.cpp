@@ -3,9 +3,9 @@
 #include <QDebug>
 #include <QTabWidget>
 #include <QFileDialog>
-#include <QtNetwork>
 #include <QDialog>
 #include <QMessageBox>
+
 
 enum  PAGE_INDEX_ENUM{
     PAGE_AUTO = 0,
@@ -19,17 +19,20 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     curPage = PAGE_AUTO;
+    connectStatus = PRM_DISCONNECT;
 
     setWindowTitle(QStringLiteral("控制器固件升级"));
     setFixedSize(this->width(), this->height());
 
     updateLocalIP();
+    initSocket();
 
     connect(ui->tabWidget, SIGNAL(currentChanged(int)),
             this, SLOT(tabWidgetCurrentChanged(int)));
     ui->tabWidget->setCurrentIndex(0);
 
-    ui->lineEdit_AutoControllerIP->setText("192.168.0.234");
+    ui->lineEdit_AutoControllerIP->setText("自动获取");
+    ui->lineEdit_AutoControllerIP->setDisabled(true);
     ui->lineEdit_AutoControllerPort->setText("9999");
 
     ui->lineEdit_ManualControllerIP->setText
@@ -38,8 +41,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->lineEdit_ManualControllerPort->setText
             (QStringLiteral("69"));
     ui->lineEdit_ManualControllerPort->setDisabled(true);
-
-    ui->pushButton_Update->
 
     statusLabel = new QLabel();
     statusLabel->setMinimumSize(150, 24);
@@ -72,7 +73,7 @@ void MainWindow::updateLocalIP()
     QHostInfo info = QHostInfo::fromName(QHostInfo::localHostName());
     foreach(QHostAddress address, info.addresses()) {
         if (address.protocol() == QAbstractSocket::IPv4Protocol) {
-            qDebug() << address.toString();
+            qDebug() << "IP：" + address.toString();
 
             ui->comboBox_LocalIP->addItem(address.toString());
         }
@@ -113,23 +114,23 @@ bool MainWindow::checkInput()
     }
 
     if (curPage == PAGE_AUTO) {
-        if (ui->lineEdit_AutoControllerIP->text().isEmpty() == true) {
-            QMessageBox::information(this, QStringLiteral("提示信息"),
-                                     QStringLiteral("控制器IP不能为空！"),
-                                     QMessageBox::Ok);
+//        if (ui->lineEdit_AutoControllerIP->text().isEmpty() == true) {
+//            QMessageBox::information(this, QStringLiteral("提示信息"),
+//                                     QStringLiteral("控制器IP不能为空！"),
+//                                     QMessageBox::Ok);
 
-            return false;
-        }
+//            return false;
+//        }
 
-        QString ip1 = ui->comboBox_LocalIP->currentText();
-        QString ip2 = ui->lineEdit_AutoControllerIP->text();
-        if (isIP_SegmentEqual(ip1, "255.255.255.0", ip2, "255.255.255.0") == false) {
-            QMessageBox::information(this, QStringLiteral("提示信息"),
-                                     QStringLiteral("本地IP与控制器IP不在同一个网段！"),
-                                     QMessageBox::Ok);
+//        QString ip1 = ui->comboBox_LocalIP->currentText();
+//        QString ip2 = ui->lineEdit_AutoControllerIP->text();
+//        if (isIP_SegmentEqual(ip1, "255.255.255.0", ip2, "255.255.255.0") == false) {
+//            QMessageBox::information(this, QStringLiteral("提示信息"),
+//                                     QStringLiteral("本地IP与控制器IP不在同一个网段！"),
+//                                     QMessageBox::Ok);
 
-            return false;
-        }
+//            return false;
+//        }
 
         if (ui->lineEdit_AutoControllerPort->text().isEmpty() == true) {
             QMessageBox::information(this, QStringLiteral("提示信息"),
@@ -143,6 +144,44 @@ bool MainWindow::checkInput()
     return true;
 }
 
+bool MainWindow::checkPRMConnect()
+{
+    auto updateCmd = QByteArray::fromHex("1B 00 21 00 02 00 00 0E 01 00 D9 F0 16");
+
+    QString port = ui->lineEdit_AutoControllerPort->text();
+    qDebug() << "端口："<< port;
+    udpSocket->writeDatagram(updateCmd.data(), updateCmd.size(),
+                         QHostAddress::Broadcast, port.toInt());
+
+    return true;
+}
+
+void MainWindow::initSocket()
+{
+    udpSocket = new QUdpSocket(this);
+
+    connect(udpSocket, SIGNAL(readyRead()),
+            this, SLOT(readPendingDatagrams()));
+}
+
+void MainWindow::readPendingDatagrams()
+{
+    while (udpSocket->hasPendingDatagrams()) {
+        QByteArray datagram;
+        datagram.resize(udpSocket->pendingDatagramSize());
+        udpSocket->readDatagram(datagram.data(), datagram.size());
+
+        QByteArray cmdReply;
+        cmdReply.fromHex("1B 00 21 00 13 00 00 0E\
+                         01 00 00 55 54 43 2D 39\
+                         30 30 30 28 44 5A 29 00\
+                         00 00 00 B0 91 16");
+        if (datagram.data() == cmdReply.data()) {
+            connectStatus = PRM_AGREE;
+            break;
+        }
+    }
+}
 
 void MainWindow::on_pushButton_Open_clicked()
 {
@@ -158,9 +197,46 @@ void MainWindow::on_pushButton_Update_clicked()
     if (checkInput() == false) {
         return;
     }
+
+    ui->pushButton_Update->setDisabled(true);
+
+    connectStatus = PRM_DISCONNECT;
+    checkPRMConnect();
+
+    int timeoutCount = 0;
+    const int TIMEOUT = 3000;
+    while ((connectStatus == PRM_DISCONNECT) &&
+           (timeoutCount < TIMEOUT)) {
+        QThread::msleep(20);
+        timeoutCount += 20;
+    }
+    switch (connectStatus) {
+    case PRM_DISCONNECT:
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("连接控制器失败！"),
+                                 QMessageBox::Ok);
+        break;
+    case PRM_REJECT:
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("控制器正在忙！"),
+                                 QMessageBox::Ok);
+        break;
+    case PRM_AGREE:
+        qDebug() << "连接控制器成功！";
+        break;
+    default:
+        break;
+    }
+    ui->pushButton_Update->setEnabled(true);
+
 }
 
-void MainWindow::tabWidgetCurrentChanged(int index)
+void MainWindow::on_tabWidget_currentChanged(int index)
 {
     curPage = index;
+}
+
+void MainWindow::on_lineEdit_returnPressed()
+{
+    ;
 }
