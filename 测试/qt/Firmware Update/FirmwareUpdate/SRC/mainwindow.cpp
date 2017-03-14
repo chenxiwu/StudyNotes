@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QDialog>
 #include <QMessageBox>
+#include "tftp.h"
 
 
 enum  PAGE_INDEX_ENUM{
@@ -198,10 +199,16 @@ void MainWindow::on_pushButton_Update_clicked()
         return;
     }
 
+    QString updatePuttonText = ui->pushButton_Update->text();
+    ui->pushButton_Update->setText(QStringLiteral("正在连接..."));
     ui->pushButton_Update->setDisabled(true);
+    repaint();
 
     connectStatus = PRM_DISCONNECT;
     checkPRMConnect();
+
+    TFTP tftp;
+    tftp.tftp_Init(ui->lineEdit_Firmware->text());
 
     int timeoutCount = 0;
     const int TIMEOUT = 3000;
@@ -223,10 +230,17 @@ void MainWindow::on_pushButton_Update_clicked()
         break;
     case PRM_AGREE:
         qDebug() << "连接控制器成功！";
+        ui->pushButton_Update->setText(QStringLiteral("升级中..."));
+        repaint();
+        //等待控制器进入BootLoader
+        QThread::msleep(1000);
+
+
         break;
     default:
         break;
     }
+    ui->pushButton_Update->setText(updatePuttonText);
     ui->pushButton_Update->setEnabled(true);
 
 }

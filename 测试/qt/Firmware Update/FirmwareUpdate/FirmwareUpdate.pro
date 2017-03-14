@@ -25,10 +25,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     SRC/main.cpp \
-    SRC/mainwindow.cpp
+    SRC/mainwindow.cpp \
+    SRC/tftp.cpp
 
 HEADERS  += \
     INC/mainwindow.h \
+    INC/tftp.h
 
 FORMS    += mainwindow.ui
 

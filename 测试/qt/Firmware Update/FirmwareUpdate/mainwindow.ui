@@ -213,15 +213,6 @@
      <string/>
     </property>
    </widget>
-   <zorder>label</zorder>
-   <zorder>pushButton_Open</zorder>
-   <zorder>label_2</zorder>
-   <zorder>comboBox_LocalIP</zorder>
-   <zorder>tabWidget</zorder>
-   <zorder>pushButton_Update</zorder>
-   <zorder>lineEdit_Firmware</zorder>
-   <zorder>label_5</zorder>
-   <zorder>label_6</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
