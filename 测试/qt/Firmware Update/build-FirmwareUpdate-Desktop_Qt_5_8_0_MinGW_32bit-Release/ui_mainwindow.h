@@ -133,15 +133,6 @@ public:
         lineEdit_Firmware->setObjectName(QStringLiteral("lineEdit_Firmware"));
         lineEdit_Firmware->setGeometry(QRect(120, 20, 201, 20));
         MainWindow->setCentralWidget(centralWidget);
-        label->raise();
-        pushButton_Open->raise();
-        label_2->raise();
-        comboBox_LocalIP->raise();
-        tabWidget->raise();
-        pushButton_Update->raise();
-        lineEdit_Firmware->raise();
-        label_5->raise();
-        label_6->raise();
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
         menuBar->setGeometry(QRect(0, 0, 450, 17));

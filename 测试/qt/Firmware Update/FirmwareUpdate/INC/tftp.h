@@ -1,6 +1,7 @@
 ﻿#ifndef TFTP_H
 #define TFTP_H
 
+#include <QMainWindow>
 #include <QtNetwork>
 
 
@@ -40,16 +41,20 @@ struct TFTP_ERROR {
 
 #pragma pack(pop)
 
-class TFTP : public QObject {
+class TFTP : public QMainWindow {
+    Q_OBJECT
+
 public:
-    void tftp_Init(QString fileName);
-    bool tftp_WriteDatagram();
+    void tftp_Init();
+    void tftp_WriteReq(QString fileName);
+    bool tftp_WriteDatagram(QByteArray datagram);
+
+private slots:
+    void readPendingDatagrams();
 
 private:
     QUdpSocket *udpSocket;
 
-private slots:
-    void readPendingDatagrams();
 };
 
 #endif // TFTP_H

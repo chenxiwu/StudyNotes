@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent) :
     initSocket();
 
     connect(ui->tabWidget, SIGNAL(currentChanged(int)),
-            this, SLOT(tabWidgetCurrentChanged(int)));
+            this, SLOT(on_tabWidget_currentChanged(int)));
     ui->tabWidget->setCurrentIndex(0);
 
     ui->lineEdit_AutoControllerIP->setText("自动获取");
@@ -208,10 +208,11 @@ void MainWindow::on_pushButton_Update_clicked()
     checkPRMConnect();
 
     TFTP tftp;
-    tftp.tftp_Init(ui->lineEdit_Firmware->text());
+    tftp.tftp_Init();
+    tftp.tftp_WriteReq(ui->lineEdit_Firmware->text());
 
     int timeoutCount = 0;
-    const int TIMEOUT = 3000;
+    const int TIMEOUT = 1000;
     while ((connectStatus == PRM_DISCONNECT) &&
            (timeoutCount < TIMEOUT)) {
         QThread::msleep(20);
@@ -248,9 +249,4 @@ void MainWindow::on_pushButton_Update_clicked()
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
     curPage = index;
-}
-
-void MainWindow::on_lineEdit_returnPressed()
-{
-    ;
 }
