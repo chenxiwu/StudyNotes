@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>450</width>
-    <height>320</height>
+    <width>500</width>
+    <height>350</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,8 +32,8 @@
      <rect>
       <x>350</x>
       <y>20</y>
-      <width>71</width>
-      <height>23</height>
+      <width>80</width>
+      <height>24</height>
      </rect>
     </property>
     <property name="text">
@@ -71,8 +71,8 @@
      <rect>
       <x>30</x>
       <y>90</y>
-      <width>391</width>
-      <height>111</height>
+      <width>431</width>
+      <height>141</height>
      </rect>
     </property>
     <property name="currentIndex">
@@ -82,24 +82,11 @@
      <attribute name="title">
       <string>自动升级</string>
      </attribute>
-     <widget class="QLineEdit" name="lineEdit_AutoControllerIP">
-      <property name="geometry">
-       <rect>
-        <x>110</x>
-        <y>20</y>
-        <width>181</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="toolTip">
-       <string/>
-      </property>
-     </widget>
      <widget class="QLineEdit" name="lineEdit_AutoControllerPort">
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>50</y>
+        <y>70</y>
         <width>181</width>
         <height>20</height>
        </rect>
@@ -122,13 +109,39 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>50</y>
+        <y>70</y>
         <width>101</width>
         <height>21</height>
        </rect>
       </property>
       <property name="text">
        <string>控制器端口：</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="comboBox_AutoControllerIP">
+      <property name="geometry">
+       <rect>
+        <x>110</x>
+        <y>20</y>
+        <width>181</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="currentText">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_Update_aotoGet">
+      <property name="geometry">
+       <rect>
+        <x>320</x>
+        <y>20</y>
+        <width>80</width>
+        <height>24</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>自动获取</string>
       </property>
      </widget>
     </widget>
@@ -140,7 +153,7 @@
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>50</y>
+        <y>70</y>
         <width>181</width>
         <height>20</height>
        </rect>
@@ -176,7 +189,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>50</y>
+        <y>70</y>
         <width>101</width>
         <height>21</height>
        </rect>
@@ -190,10 +203,10 @@
    <widget class="QPushButton" name="pushButton_Update">
     <property name="geometry">
      <rect>
-      <x>140</x>
-      <y>210</y>
-      <width>131</width>
-      <height>31</height>
+      <x>190</x>
+      <y>250</y>
+      <width>120</width>
+      <height>32</height>
      </rect>
     </property>
     <property name="text">
@@ -219,7 +232,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>450</width>
+     <width>500</width>
      <height>17</height>
     </rect>
    </property>
@@ -249,6 +262,9 @@
    <property name="text">
     <string>打开(&amp;O)</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
   </action>
   <action name="action">
    <property name="text">
@@ -263,6 +279,9 @@
    <property name="text">
     <string>升级说明(&amp;D)</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
   </action>
   <action name="action_A">
    <property name="icon">
@@ -271,6 +290,9 @@
    </property>
    <property name="text">
     <string>关于(&amp;A)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
    </property>
   </action>
  </widget>

@@ -6,6 +6,7 @@
 #include <QDialog>
 #include <QMessageBox>
 #include "tftp.h"
+#include "crc16.h"
 
 
 enum  PAGE_INDEX_ENUM{
@@ -32,8 +33,6 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(on_tabWidget_currentChanged(int)));
     ui->tabWidget->setCurrentIndex(0);
 
-    ui->lineEdit_AutoControllerIP->setText("自动获取");
-    ui->lineEdit_AutoControllerIP->setDisabled(true);
     ui->lineEdit_AutoControllerPort->setText("9999");
 
     ui->lineEdit_ManualControllerIP->setText
@@ -46,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent) :
     statusLabel = new QLabel();
     statusLabel->setMinimumSize(150, 24);
     statusLabel->setFrameStyle(QFrame::WinPanel | QFrame::Sunken);
-    statusLabel->setText(QStringLiteral("欢迎使用固件升级软件！"));
+    statusLabel->setText(QStringLiteral("欢迎使用固件升级系统！"));
     ui->statusBar->addWidget(statusLabel);
 
     progressBar = new QProgressBar();
@@ -115,23 +114,23 @@ bool MainWindow::checkInput()
     }
 
     if (curPage == PAGE_AUTO) {
-//        if (ui->lineEdit_AutoControllerIP->text().isEmpty() == true) {
-//            QMessageBox::information(this, QStringLiteral("提示信息"),
-//                                     QStringLiteral("控制器IP不能为空！"),
-//                                     QMessageBox::Ok);
+        if (ui->comboBox_AutoControllerIP->count() == 0) {
+            QMessageBox::information(this, QStringLiteral("提示信息"),
+                                     QStringLiteral("控制器IP不能为空，请点击【自动获取】按钮！"),
+                                     QMessageBox::Ok);
 
-//            return false;
-//        }
+            return false;
+        }
 
-//        QString ip1 = ui->comboBox_LocalIP->currentText();
-//        QString ip2 = ui->lineEdit_AutoControllerIP->text();
-//        if (isIP_SegmentEqual(ip1, "255.255.255.0", ip2, "255.255.255.0") == false) {
-//            QMessageBox::information(this, QStringLiteral("提示信息"),
-//                                     QStringLiteral("本地IP与控制器IP不在同一个网段！"),
-//                                     QMessageBox::Ok);
+        QString ip1 = ui->comboBox_LocalIP->currentText();
+        QString ip2 = ui->comboBox_AutoControllerIP->currentText();
+        if (isIP_SegmentEqual(ip1, "255.255.255.0", ip2, "255.255.255.0") == false) {
+            QMessageBox::information(this, QStringLiteral("提示信息"),
+                                     QStringLiteral("本地IP与控制器IP不在同一个网段！"),
+                                     QMessageBox::Ok);
 
-//            return false;
-//        }
+            return false;
+        }
 
         if (ui->lineEdit_AutoControllerPort->text().isEmpty() == true) {
             QMessageBox::information(this, QStringLiteral("提示信息"),
@@ -145,9 +144,28 @@ bool MainWindow::checkInput()
     return true;
 }
 
-bool MainWindow::checkPRMConnect()
+bool MainWindow::CMD_SystemUpdate(bool isUpdate)
 {
-    auto updateCmd = QByteArray::fromHex("1B 00 21 00 02 00 00 0E 01 00 D9 F0 16");
+    QByteArray updateCmd;
+    UDP_PROTECOL_HEAD_TypeDef head;
+    head.start = 0x1B;
+    head.addr = 0;
+    head.index = 0x21;
+    head.rsv1 = 0;
+    head.size = 2;
+    head.rsv2 = 0;
+    head.token = 0x0E;
+    updateCmd.append((const char *)&head, sizeof(head));
+
+    CMD_UPDATE_TypeDef body;
+    body.cmd = 0x5555;
+    body.update = isUpdate;
+    updateCmd.append((const char *)&body, sizeof(body));
+
+    UDP_PROTECOL_TAIL_TypeDef tail;
+    tail.crc = CRC16::get(0, (quint8 *)updateCmd.data(), updateCmd.size());
+    tail.end = 0x16;
+    updateCmd.append((const char *)&tail, sizeof(tail));
 
     QString port = ui->lineEdit_AutoControllerPort->text();
     qDebug() << "端口："<< port;
@@ -169,16 +187,58 @@ void MainWindow::readPendingDatagrams()
 {
     while (udpSocket->hasPendingDatagrams()) {
         QByteArray datagram;
+        QHostAddress remoteAddress;
+        quint16 remotePort;
         datagram.resize(udpSocket->pendingDatagramSize());
-        udpSocket->readDatagram(datagram.data(), datagram.size());
+        udpSocket->readDatagram(datagram.data(), datagram.size(), &remoteAddress, &remotePort);
 
-        QByteArray cmdReply;
-        cmdReply.fromHex("1B 00 21 00 13 00 00 0E\
-                         01 00 00 55 54 43 2D 39\
-                         30 30 30 28 44 5A 29 00\
-                         00 00 00 B0 91 16");
-        if (datagram.data() == cmdReply.data()) {
-            connectStatus = PRM_AGREE;
+        UDP_PROTECOL_HEAD_TypeDef *head = (UDP_PROTECOL_HEAD_TypeDef *)datagram.data();
+        UDP_PROTECOL_TAIL_TypeDef *tail = (UDP_PROTECOL_TAIL_TypeDef *)(datagram.data() +
+                                                                        sizeof(UDP_PROTECOL_HEAD_TypeDef)
+                                                                        + head->size);
+        quint16 crc = CRC16::get(0, (quint8 *)datagram.data(),
+                                 sizeof(UDP_PROTECOL_HEAD_TypeDef) + head->size);
+        if (tail->crc != crc) {
+            continue;
+        }
+
+        CMD_UPDATE_REPLY_TypeDef *body = (CMD_UPDATE_REPLY_TypeDef *)head->data;
+        const quint8 STATUS_REPLY_OK = 0;
+
+        switch (connectStatus) {
+        case PRM_DISCONNECT:
+            if (body->status == STATUS_REPLY_OK) {
+                ui->comboBox_AutoControllerIP->addItem(remoteAddress.toString());
+            }
+            break;
+        case PRM_AGREE:
+
+            break;
+        case PRM_REJECT:
+
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void MainWindow::openFile()
+{
+    QString filePath = QFileDialog::getOpenFileName(this,
+                            QStringLiteral("选择升级文件"));
+    if (filePath.isEmpty() == false) {
+        ui->lineEdit_Firmware->setText(filePath);
+    }
+}
+
+void MainWindow::updateLocalIpByControllerIp(const QString &controllerIp)
+{
+    for (int i=0; i<ui->comboBox_LocalIP->count(); ++i) {
+        if (isIP_SegmentEqual(ui->comboBox_LocalIP->itemText(i) , "255.255.255.0",
+                              controllerIp, "255.255.255.0") == true) {
+            //自动更新下拉列表数据
+            ui->comboBox_LocalIP->setCurrentIndex(i);
             break;
         }
     }
@@ -186,11 +246,7 @@ void MainWindow::readPendingDatagrams()
 
 void MainWindow::on_pushButton_Open_clicked()
 {
-    QString filePath = QFileDialog::getOpenFileName(this,
-                       QStringLiteral("选择升级文件"));
-    if (filePath.isEmpty() == false) {
-        ui->lineEdit_Firmware->setText(filePath);
-    }
+    openFile();
 }
 
 void MainWindow::on_pushButton_Update_clicked()
@@ -204,12 +260,14 @@ void MainWindow::on_pushButton_Update_clicked()
     ui->pushButton_Update->setDisabled(true);
     repaint();
 
-    connectStatus = PRM_DISCONNECT;
-    checkPRMConnect();
+//    connectStatus = PRM_DISCONNECT;
+//    CMD_SystemUpdate(true);
 
-    TFTP tftp;
-    tftp.tftp_Init();
-    tftp.tftp_WriteReq(ui->lineEdit_Firmware->text());
+    TFTP tftp(ui->comboBox_AutoControllerIP->currentText());
+    QString filePath = ui->lineEdit_Firmware->text();
+    QFileInfo info(filePath);
+    tftp.writeReq(info.fileName());
+    tftp.writeFile(filePath);
 
     int timeoutCount = 0;
     const int TIMEOUT = 1000;
@@ -233,6 +291,7 @@ void MainWindow::on_pushButton_Update_clicked()
         qDebug() << "连接控制器成功！";
         ui->pushButton_Update->setText(QStringLiteral("升级中..."));
         repaint();
+
         //等待控制器进入BootLoader
         QThread::msleep(1000);
 
@@ -249,4 +308,33 @@ void MainWindow::on_pushButton_Update_clicked()
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
     curPage = index;
+}
+
+void MainWindow::on_action_O_triggered()
+{
+    openFile();
+}
+
+
+void MainWindow::on_pushButton_Update_aotoGet_clicked()
+{
+    ui->pushButton_Update_aotoGet->setDisabled(true);
+    repaint();
+
+    ui->comboBox_AutoControllerIP->clear();
+
+    connectStatus = PRM_DISCONNECT;
+    CMD_SystemUpdate(true);
+
+    //超时判断
+    QThread::msleep(1000);
+    if (ui->comboBox_AutoControllerIP->count() == 0) {
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("找不到控制器！"),
+                                 QMessageBox::Ok);
+    } else {
+        updateLocalIpByControllerIp(ui->comboBox_AutoControllerIP->currentText());
+    }
+
+    ui->pushButton_Update_aotoGet->setEnabled(true);
 }

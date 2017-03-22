@@ -13,6 +13,12 @@ enum TFTP_OPERATION_CODE {
     TFTP_CODE_ERROR,
 };
 
+enum TFTP_WR_STATUS {
+    TFTP_STATUS_WRQ = 0,
+    TFTP_STATUS_SENDING,
+    TFTP_STATUS_DONE,
+};
+
 #pragma pack(push,1)
 
 struct TFTP_WRQ {
@@ -45,16 +51,21 @@ class TFTP : public QMainWindow {
     Q_OBJECT
 
 public:
-    void tftp_Init();
-    void tftp_WriteReq(QString fileName);
-    bool tftp_WriteDatagram(QByteArray datagram);
+    explicit TFTP(const QString remoteIP);
+    ~TFTP();
+
+    void writeReq(const QString &fileName);
+    bool writeFile(const QString &filePath);
 
 private slots:
     void readPendingDatagrams();
 
 private:
     QUdpSocket *udpSocket;
-
+    TFTP_WR_STATUS wrStatus;
+    quint16 block;
+    QString remoteIP;
+    quint16 remotePort;
 };
 
 #endif // TFTP_H

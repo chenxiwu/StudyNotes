@@ -1,15 +1,15 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2017-03-12T18:20:22
+# Project created by QtCreator 2017-03-20T20:33:40
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       -= gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+TARGET = CRC16
+TEMPLATE = lib
 
-TARGET = FirmwareUpdate
-TEMPLATE = app
+DEFINES += CRC16_LIBRARY
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
@@ -22,29 +22,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+SOURCES += crc16.cpp
 
-SOURCES += \
-    SRC/main.cpp \
-    SRC/mainwindow.cpp \
-    SRC/tftp.cpp \
-    SRC/crc16.cpp
+HEADERS += crc16.h\
+        crc16_global.h
 
-HEADERS  += \
-    INC/mainwindow.h \
-    INC/tftp.h \
-    INC/crc16.h
-
-FORMS    += mainwindow.ui
-
-INCLUDEPATH += \
-    $$PWD/INC/ \
-
-
-#LIBS	    += \
-#    "$$PWD/LIB/CRC16/CRC16.dll"
-
-RESOURCES += \
-    Res/res.qrc
-
-RC_ICONS = app.ico
-
+unix {
+    target.path = /usr/lib
+    INSTALLS += target
+}
