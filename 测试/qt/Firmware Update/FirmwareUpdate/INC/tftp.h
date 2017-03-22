@@ -30,7 +30,6 @@ struct TFTP_WRQ {
 struct TFTP_DATA {
     quint16 opCode;
     quint16 block;
-    quint8 data[0];
 };
 
 struct TFTP_ACK {

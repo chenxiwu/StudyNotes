@@ -48,6 +48,13 @@ void TFTP::writeReq(const QString &fileName)
 
 bool TFTP::writeFile(const QString &filePath)
 {
+    /*
+        2 bytes     2 bytes      n bytes
+       ----------------------------------
+      | Opcode |   Block #  |   Data     |
+       ----------------------------------
+    */
+
     if (wrStatus != TFTP_STATUS_SENDING) {
         QMessageBox::information(this, QStringLiteral("提示信息"),
                                  QStringLiteral("内部状态错误！"),
@@ -67,20 +74,23 @@ bool TFTP::writeFile(const QString &filePath)
     QDataStream in(&file);
     file.close();
 
-    const quint32 ONCE_SEND_SIZE = 512;
+    struct TFTP_DATA writedata;
+    writedata.opCode = TFTP_CODE_DATA;
     QByteArray datagram;
+
+    const quint32 ONCE_SEND_SIZE = 512;
     char buff[ONCE_SEND_SIZE];
 
     block = 0;
     quint16 nextBlock = block;
     while (true) {
-        quint32 rdLenth = in.readRawData(buff, ONCE_SEND_SIZE);
-        if (rdLenth == 0) {
-            break;
-        }
+        quint32 rdLenth = in.readRawData(buff, ONCE_SEND_SIZE);       
 
-        datagram.append(buff, rdLenth);
         nextBlock++;
+        writedata.block = nextBlock;
+        datagram.append((const char *)&writedata, sizeof(writedata));
+        datagram.append(buff, rdLenth);
+
         udpSocket->writeDatagram(datagram.data(), datagram.size(),
                                  QHostAddress(remoteIP), remotePort);
         //等待服务器回复数据
@@ -94,6 +104,10 @@ bool TFTP::writeFile(const QString &filePath)
                                         QMessageBox::Ok);
                 return false;
             }
+        }
+
+        if (rdLenth == 0) {
+            break;
         }
     }
 
