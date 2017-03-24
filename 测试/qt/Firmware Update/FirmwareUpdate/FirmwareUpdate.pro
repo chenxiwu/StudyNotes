@@ -28,14 +28,19 @@ SOURCES += \
     SRC/mainwindow.cpp \
     SRC/tftp.cpp \
     SRC/crc16.cpp \
-    SRC/dialogdebug.cpp
+    SRC/dialogdebug.cpp \
+    SRC/utils.cpp \
+    SRC/debugthread.cpp
 
 HEADERS  += \
     INC/mainwindow.h \
     INC/tftp.h \
     INC/crc16.h \
     dialogdebug.h \
-    INC/dialogdebug.h
+    INC/dialogdebug.h \
+    INC/utils.h \
+    SRC/debugthread.h \
+    INC/debugthread.h
 
 FORMS    += mainwindow.ui \
     dialogdebug.ui

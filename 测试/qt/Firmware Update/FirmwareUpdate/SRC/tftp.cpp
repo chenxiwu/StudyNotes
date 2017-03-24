@@ -3,11 +3,8 @@
 #include <QDataStream>
 #include <QMessageBox>
 #include <QtEndian>
+#include "utils.h"
 
-quint16 htons(quint16 n)
-{
-    return ((n & 0xff) << 8) | ((n & 0xff00) >> 8);
-}
 
 TFTP::TFTP(const QString remoteIP)
 {
@@ -54,6 +51,12 @@ void TFTP::writeReq(const QString &fileName)
 
 bool TFTP::writeFile(const QString &filePath)
 {
+    /*
+        2 bytes     2 bytes      n bytes
+        ----------------------------------
+        | Opcode |   Block #  |   Data     |
+        ----------------------------------
+    */
     if (wrStatus != TFTP_STATUS_SENDING) {
         QMessageBox::information(this, QStringLiteral("提示信息"),
                                  QStringLiteral("内部状态错误！"),
@@ -139,7 +142,7 @@ void TFTP::readPendingDatagrams()
                     this->remotePort = remotePort;
                 }
             } else if (wrStatus == TFTP_STATUS_SENDING) {
-                qDebug() << "Block" << reply->block;
+                qDebug() << "Block：" << reply->block;
                 block = reply->block;
             }
         }

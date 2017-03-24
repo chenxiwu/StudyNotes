@@ -5,6 +5,7 @@
 #include <QProgressBar>
 #include <QLabel>
 #include <QtNetwork>
+#include "debugthread.h"
 
 enum CONNECT_PRM_STATUS {
     PRM_DISCONNECT = 0,
@@ -73,8 +74,6 @@ private slots:
 
     void on_pushButton_Update_aotoGet_clicked();
 
-    void on_action_2_triggered();
-
     void on_action_Debug_triggered();
 
 private:
@@ -85,6 +84,8 @@ private:
     QUdpSocket *udpSocket;
     CONNECT_PRM_STATUS connectStatus;
     bool debugOpen;
+
+    DebugThread thread;
 };
 
 #endif // MAINWINDOW_H

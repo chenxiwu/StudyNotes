@@ -7,7 +7,9 @@
 #include <QMessageBox>
 #include "tftp.h"
 #include "crc16.h"
-
+#include "utils.h"
+#include "dialogdebug.h"
+#include <QThread>
 
 enum  PAGE_INDEX_ENUM{
     PAGE_AUTO = 0,
@@ -19,6 +21,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    QFile::remove(LOG_NAME);
 
     curPage = PAGE_AUTO;
     connectStatus = PRM_DISCONNECT;
@@ -75,7 +79,7 @@ void MainWindow::updateLocalIP()
     QHostInfo info = QHostInfo::fromName(QHostInfo::localHostName());
     foreach(QHostAddress address, info.addresses()) {
         if (address.protocol() == QAbstractSocket::IPv4Protocol) {
-            qDebug() << "IP：" + address.toString();
+            qDebug() << "本地IP：" + address.toString();
 
             ui->comboBox_LocalIP->addItem(address.toString());
         }
@@ -108,6 +112,7 @@ bool MainWindow::isIP_SegmentEqual(QString ip1, QString subnetMask1,
 bool MainWindow::checkInput()
 {
     if (ui->lineEdit_Firmware->text().isEmpty() == true) {
+        qDebug() << "未选择固件！";
         QMessageBox::information(this, QStringLiteral("提示信息"),
                                  QStringLiteral("请先选择固件！"),
                                  QMessageBox::Ok);
@@ -117,6 +122,7 @@ bool MainWindow::checkInput()
 
     if (curPage == PAGE_AUTO) {
         if (ui->comboBox_AutoControllerIP->count() == 0) {
+            qDebug() << "控制器IP为空！";
             QMessageBox::information(this, QStringLiteral("提示信息"),
                                      QStringLiteral("控制器IP不能为空，请点击【自动获取】按钮！"),
                                      QMessageBox::Ok);
@@ -127,6 +133,7 @@ bool MainWindow::checkInput()
         QString ip1 = ui->comboBox_LocalIP->currentText();
         QString ip2 = ui->comboBox_AutoControllerIP->currentText();
         if (isIP_SegmentEqual(ip1, "255.255.255.0", ip2, "255.255.255.0") == false) {
+            qDebug() << "本地IP与控制器IP不在同一网段！";
             QMessageBox::information(this, QStringLiteral("提示信息"),
                                      QStringLiteral("本地IP与控制器IP不在同一个网段！"),
                                      QMessageBox::Ok);
@@ -135,6 +142,7 @@ bool MainWindow::checkInput()
         }
 
         if (ui->lineEdit_AutoControllerPort->text().isEmpty() == true) {
+            qDebug() << "控制器端口为空！";
             QMessageBox::information(this, QStringLiteral("提示信息"),
                                      QStringLiteral("控制器端口不能为空！"),
                                      QMessageBox::Ok);
@@ -170,9 +178,11 @@ bool MainWindow::CMD_SystemUpdate(bool isUpdate)
     updateCmd.append((const char *)&tail, sizeof(tail));
 
     QString port = ui->lineEdit_AutoControllerPort->text();
-    qDebug() << "端口："<< port;
+    qDebug() << "控制器端口：" << port;
     udpSocket->writeDatagram(updateCmd.data(), updateCmd.size(),
                          QHostAddress::Broadcast, port.toInt());
+
+    qDebug() << "> 发送系统更新命令！";
 
     return true;
 }
@@ -237,6 +247,8 @@ void MainWindow::openFile()
     if (filePath.isEmpty() == false) {
         ui->lineEdit_Firmware->setText(filePath);
     }
+
+    qDebug() << "打开文件！";
 }
 
 void MainWindow::updateLocalIpByControllerIp(const QString &controllerIp)
@@ -306,7 +318,6 @@ void MainWindow::UpdateFirmWare_Handler()
                                  QMessageBox::Ok);
         break;
     case PRM_AGREE:
-        qDebug() << "连接控制器成功！";
         ui->pushButton_Update->setText(QStringLiteral("升级中..."));
         repaint();
 
@@ -323,6 +334,8 @@ void MainWindow::UpdateFirmWare_Handler()
 
 void MainWindow::on_pushButton_Update_clicked()
 {
+    qDebug() << "按下[升级]按钮！";
+
     if (checkInput() == false) {
         return;
     }
@@ -351,6 +364,8 @@ void MainWindow::on_action_O_triggered()
 
 void MainWindow::on_pushButton_Update_aotoGet_clicked()
 {
+    qDebug() << "按下 [自动获取] 按钮！";
+
     ui->pushButton_Update_aotoGet->setDisabled(true);
     repaint();
 
@@ -370,3 +385,5 @@ void MainWindow::on_action_Debug_triggered()
 
 
 }
+
+

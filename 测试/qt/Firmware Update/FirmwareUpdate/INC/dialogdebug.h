@@ -1,4 +1,4 @@
-#ifndef DIALOGDEBUG_H
+﻿#ifndef DIALOGDEBUG_H
 #define DIALOGDEBUG_H
 
 #include <QDialog>
@@ -15,8 +15,13 @@ public:
     explicit DialogDebug(QWidget *parent = 0);
     ~DialogDebug();
 
+private slots:
+    void autoScroll();
+
+    void on_pushButton_Clear_clicked();
+
 private:
-    Ui::DialogDebug *ui;
+    Ui::DialogDebug *ui;    
 };
 
 #endif // DIALOGDEBUG_H
