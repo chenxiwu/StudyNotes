@@ -59,6 +59,8 @@ MainWindow::MainWindow(QWidget *parent) :
     label->setTextFormat(Qt::RichText);
     label->setOpenExternalLinks(true);
     ui->statusBar->addPermanentWidget(label);
+
+    debugOpen = false;
 }
 
 MainWindow::~MainWindow()
@@ -152,13 +154,13 @@ bool MainWindow::CMD_SystemUpdate(bool isUpdate)
     head.addr = 0;
     head.index = 0x21;
     head.rsv1 = 0;
-    head.size = 2;
+    head.size = sizeof(CMD_UPDATE_TypeDef);
     head.rsv2 = 0;
     head.token = 0x0E;
     updateCmd.append((const char *)&head, sizeof(head));
 
     CMD_UPDATE_TypeDef body;
-    body.cmd = 0x5555;
+    body.cmd = 0x0011;
     body.update = isUpdate;
     updateCmd.append((const char *)&body, sizeof(body));
 
@@ -188,9 +190,14 @@ void MainWindow::readPendingDatagrams()
     while (udpSocket->hasPendingDatagrams()) {
         QByteArray datagram;
         QHostAddress remoteAddress;
-        quint16 remotePort;
+        quint16 remotePort;       
+
         datagram.resize(udpSocket->pendingDatagramSize());
         udpSocket->readDatagram(datagram.data(), datagram.size(), &remoteAddress, &remotePort);
+
+        QString remoteIP = remoteAddress.toString();
+        QRegExp exp("[A-Za-z:]");
+        remoteIP = remoteIP.remove(exp);
 
         UDP_PROTECOL_HEAD_TypeDef *head = (UDP_PROTECOL_HEAD_TypeDef *)datagram.data();
         UDP_PROTECOL_TAIL_TypeDef *tail = (UDP_PROTECOL_TAIL_TypeDef *)(datagram.data() +
@@ -207,8 +214,8 @@ void MainWindow::readPendingDatagrams()
 
         switch (connectStatus) {
         case PRM_DISCONNECT:
-            if (body->status == STATUS_REPLY_OK) {
-                ui->comboBox_AutoControllerIP->addItem(remoteAddress.toString());
+            if (body->status == STATUS_REPLY_OK) {              
+                ui->comboBox_AutoControllerIP->addItem(remoteIP);
             }
             break;
         case PRM_AGREE:
@@ -249,24 +256,35 @@ void MainWindow::on_pushButton_Open_clicked()
     openFile();
 }
 
-void MainWindow::on_pushButton_Update_clicked()
+void MainWindow::UpdateFirmWare_Handler()
 {
-    if (checkInput() == false) {
-        return;
-    }
-
-    QString updatePuttonText = ui->pushButton_Update->text();
-    ui->pushButton_Update->setText(QStringLiteral("正在连接..."));
-    ui->pushButton_Update->setDisabled(true);
-    repaint();
-
-//    connectStatus = PRM_DISCONNECT;
-//    CMD_SystemUpdate(true);
+    connectStatus = PRM_DISCONNECT;
+    CMD_SystemUpdate(true);
+    QThread::msleep(1000);
 
     TFTP tftp(ui->comboBox_AutoControllerIP->currentText());
     QString filePath = ui->lineEdit_Firmware->text();
     QFileInfo info(filePath);
-    tftp.writeReq(info.fileName());
+
+    quint32 cnt = 0;
+    while (1) {
+        if (cnt % 1000 == 0) {
+            tftp.writeReq(info.fileName());
+        }
+        cnt++;
+        QThread::msleep(1);
+
+        TFTP_WR_STATUS status = tftp.getStatus();
+        if (status == TFTP_STATUS_SENDING) {
+            break;
+        } else if (cnt >= 5000) {
+            QMessageBox::information(this, QStringLiteral("提示信息"),
+                                     QStringLiteral("接收控制器命令超时！"),
+                                     QMessageBox::Ok);
+            return;
+        }
+    }
+
     tftp.writeFile(filePath);
 
     int timeoutCount = 0;
@@ -300,9 +318,24 @@ void MainWindow::on_pushButton_Update_clicked()
     default:
         break;
     }
+
+}
+
+void MainWindow::on_pushButton_Update_clicked()
+{
+    if (checkInput() == false) {
+        return;
+    }
+
+    QString updatePuttonText = ui->pushButton_Update->text();
+    ui->pushButton_Update->setText(QStringLiteral("正在连接..."));
+    ui->pushButton_Update->setDisabled(true);
+    repaint();
+
+    UpdateFirmWare_Handler();
+
     ui->pushButton_Update->setText(updatePuttonText);
     ui->pushButton_Update->setEnabled(true);
-
 }
 
 void MainWindow::on_tabWidget_currentChanged(int index)
@@ -324,17 +357,16 @@ void MainWindow::on_pushButton_Update_aotoGet_clicked()
     ui->comboBox_AutoControllerIP->clear();
 
     connectStatus = PRM_DISCONNECT;
-    CMD_SystemUpdate(true);
-
-    //超时判断
-    QThread::msleep(1000);
-    if (ui->comboBox_AutoControllerIP->count() == 0) {
-        QMessageBox::information(this, QStringLiteral("提示信息"),
-                                 QStringLiteral("找不到控制器！"),
-                                 QMessageBox::Ok);
-    } else {
-        updateLocalIpByControllerIp(ui->comboBox_AutoControllerIP->currentText());
-    }
+    CMD_SystemUpdate(false);
 
     ui->pushButton_Update_aotoGet->setEnabled(true);
+}
+
+void MainWindow::on_action_Debug_triggered()
+{
+    if (debugOpen == true) {
+        return;
+    }
+
+
 }

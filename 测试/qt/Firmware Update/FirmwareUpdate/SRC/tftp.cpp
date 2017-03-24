@@ -2,6 +2,12 @@
 #include <QDebug>
 #include <QDataStream>
 #include <QMessageBox>
+#include <QtEndian>
+
+quint16 htons(quint16 n)
+{
+    return ((n & 0xff) << 8) | ((n & 0xff00) >> 8);
+}
 
 TFTP::TFTP(const QString remoteIP)
 {
@@ -32,7 +38,7 @@ void TFTP::writeReq(const QString &fileName)
        ------------------------------------------------
     */
     struct TFTP_WRQ writeReq;
-    writeReq.opCode = TFTP_CODE_WRQ;
+    writeReq.opCode = htons(TFTP_CODE_WRQ);
 
     QByteArray datagram;
     datagram.append((const char *)&writeReq, sizeof(writeReq.opCode));
@@ -48,13 +54,6 @@ void TFTP::writeReq(const QString &fileName)
 
 bool TFTP::writeFile(const QString &filePath)
 {
-    /*
-        2 bytes     2 bytes      n bytes
-       ----------------------------------
-      | Opcode |   Block #  |   Data     |
-       ----------------------------------
-    */
-
     if (wrStatus != TFTP_STATUS_SENDING) {
         QMessageBox::information(this, QStringLiteral("提示信息"),
                                  QStringLiteral("内部状态错误！"),
@@ -74,25 +73,26 @@ bool TFTP::writeFile(const QString &filePath)
     QDataStream in(&file);
     file.close();
 
-    struct TFTP_DATA writedata;
-    writedata.opCode = TFTP_CODE_DATA;
+    const quint32 ONCE_SEND_SIZE = 512;
     QByteArray datagram;
 
-    const quint32 ONCE_SEND_SIZE = 512;
     char buff[ONCE_SEND_SIZE];
-
     block = 0;
     quint16 nextBlock = block;
     while (true) {
-        quint32 rdLenth = in.readRawData(buff, ONCE_SEND_SIZE);       
-
+        struct TFTP_DATA writeData;
+        writeData.opCode = htons(TFTP_CODE_DATA);
         nextBlock++;
-        writedata.block = nextBlock;
-        datagram.append((const char *)&writedata, sizeof(writedata));
+        writeData.block = htons(nextBlock);
+        datagram.append((const char *)&writeData, sizeof(writeData));
+
+        quint32 rdLenth = in.readRawData(buff, ONCE_SEND_SIZE);
         datagram.append(buff, rdLenth);
 
         udpSocket->writeDatagram(datagram.data(), datagram.size(),
                                  QHostAddress(remoteIP), remotePort);
+        datagram.clear();
+
         //等待服务器回复数据
         quint32 cnt = 0;
         while (block != nextBlock) {
@@ -112,6 +112,11 @@ bool TFTP::writeFile(const QString &filePath)
     }
 
     return true;
+}
+
+TFTP_WR_STATUS TFTP::getStatus()
+{
+    return wrStatus;
 }
 
 void TFTP::readPendingDatagrams()

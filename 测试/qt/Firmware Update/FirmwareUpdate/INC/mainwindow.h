@@ -60,6 +60,7 @@ public:
     void initSocket();
     void openFile();
     void updateLocalIpByControllerIp(const QString &controllerIp);
+    void UpdateFirmWare_Handler();
 
 private slots:
     void on_pushButton_Open_clicked();
@@ -72,6 +73,10 @@ private slots:
 
     void on_pushButton_Update_aotoGet_clicked();
 
+    void on_action_2_triggered();
+
+    void on_action_Debug_triggered();
+
 private:
     Ui::MainWindow *ui;
     QProgressBar *progressBar;
@@ -79,6 +84,7 @@ private:
     int curPage;
     QUdpSocket *udpSocket;
     CONNECT_PRM_STATUS connectStatus;
+    bool debugOpen;
 };
 
 #endif // MAINWINDOW_H

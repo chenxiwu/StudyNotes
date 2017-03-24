@@ -55,6 +55,7 @@ public:
 
     void writeReq(const QString &fileName);
     bool writeFile(const QString &filePath);
+    TFTP_WR_STATUS getStatus();
 
 private slots:
     void readPendingDatagrams();

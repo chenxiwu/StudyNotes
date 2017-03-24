@@ -27,14 +27,18 @@ SOURCES += \
     SRC/main.cpp \
     SRC/mainwindow.cpp \
     SRC/tftp.cpp \
-    SRC/crc16.cpp
+    SRC/crc16.cpp \
+    SRC/dialogdebug.cpp
 
 HEADERS  += \
     INC/mainwindow.h \
     INC/tftp.h \
-    INC/crc16.h
+    INC/crc16.h \
+    dialogdebug.h \
+    INC/dialogdebug.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    dialogdebug.ui
 
 INCLUDEPATH += \
     $$PWD/INC/ \
