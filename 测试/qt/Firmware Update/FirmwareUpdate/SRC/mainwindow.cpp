@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "dialogdebug.h"
 #include <QThread>
+#include "debugthread.h"
 
 enum  PAGE_INDEX_ENUM{
     PAGE_AUTO = 0,
@@ -64,7 +65,13 @@ MainWindow::MainWindow(QWidget *parent) :
     label->setOpenExternalLinks(true);
     ui->statusBar->addPermanentWidget(label);
 
-    debugOpen = false;
+    tftp = new TFTP();
+    connect(tftp, SIGNAL(sendMsg(quint32)),
+            this, SLOT(TFTP_ReceiveMsg(quint32)));
+    tftp->start();
+
+    //测试
+    ui->comboBox_AutoControllerIP->addItem("192.168.0.234");
 }
 
 MainWindow::~MainWindow()
@@ -200,7 +207,7 @@ void MainWindow::readPendingDatagrams()
     while (udpSocket->hasPendingDatagrams()) {
         QByteArray datagram;
         QHostAddress remoteAddress;
-        quint16 remotePort;       
+        quint16 remotePort;
 
         datagram.resize(udpSocket->pendingDatagramSize());
         udpSocket->readDatagram(datagram.data(), datagram.size(), &remoteAddress, &remotePort);
@@ -216,6 +223,7 @@ void MainWindow::readPendingDatagrams()
         quint16 crc = CRC16::get(0, (quint8 *)datagram.data(),
                                  sizeof(UDP_PROTECOL_HEAD_TypeDef) + head->size);
         if (tail->crc != crc) {
+            qDebug() << "CRC校验错误！";
             continue;
         }
 
@@ -224,7 +232,8 @@ void MainWindow::readPendingDatagrams()
 
         switch (connectStatus) {
         case PRM_DISCONNECT:
-            if (body->status == STATUS_REPLY_OK) {              
+            if (body->status == STATUS_REPLY_OK) {
+                qDebug() << "收到远程服务器回复！";
                 ui->comboBox_AutoControllerIP->addItem(remoteIP);
             }
             break;
@@ -270,65 +279,70 @@ void MainWindow::on_pushButton_Open_clicked()
 
 void MainWindow::UpdateFirmWare_Handler()
 {
+    qDebug() << "> 准备升级...";
+
     connectStatus = PRM_DISCONNECT;
-    CMD_SystemUpdate(true);
-    QThread::msleep(1000);
+ //   CMD_SystemUpdate(true);
+//    QThread::msleep(1000);
 
-    TFTP tftp(ui->comboBox_AutoControllerIP->currentText());
-    QString filePath = ui->lineEdit_Firmware->text();
-    QFileInfo info(filePath);
+    tftp->setRemoteIP(ui->comboBox_AutoControllerIP->currentText());
+    tftp->setFilePath(ui->lineEdit_Firmware->text());
+    tftp->start();
 
-    quint32 cnt = 0;
-    while (1) {
-        if (cnt % 1000 == 0) {
-            tftp.writeReq(info.fileName());
-        }
-        cnt++;
-        QThread::msleep(1);
-
-        TFTP_WR_STATUS status = tftp.getStatus();
-        if (status == TFTP_STATUS_SENDING) {
-            break;
-        } else if (cnt >= 5000) {
-            QMessageBox::information(this, QStringLiteral("提示信息"),
-                                     QStringLiteral("接收控制器命令超时！"),
-                                     QMessageBox::Ok);
-            return;
-        }
-    }
-
-    tftp.writeFile(filePath);
-
-    int timeoutCount = 0;
-    const int TIMEOUT = 1000;
-    while ((connectStatus == PRM_DISCONNECT) &&
-           (timeoutCount < TIMEOUT)) {
-        QThread::msleep(20);
-        timeoutCount += 20;
-    }
-    switch (connectStatus) {
-    case PRM_DISCONNECT:
-        QMessageBox::information(this, QStringLiteral("提示信息"),
-                                 QStringLiteral("连接控制器失败！"),
-                                 QMessageBox::Ok);
-        break;
-    case PRM_REJECT:
-        QMessageBox::information(this, QStringLiteral("提示信息"),
-                                 QStringLiteral("控制器正在忙！"),
-                                 QMessageBox::Ok);
-        break;
-    case PRM_AGREE:
-        ui->pushButton_Update->setText(QStringLiteral("升级中..."));
-        repaint();
-
-        //等待控制器进入BootLoader
-        QThread::msleep(1000);
+    return;
 
 
-        break;
-    default:
-        break;
-    }
+//    quint32 cnt = 0;
+//    while (1) {
+//        if (cnt % 1000 == 0) {
+//            tftp.writeReq(info.fileName());
+//        }
+//        cnt++;
+//        QThread::msleep(1);
+
+//        TFTP_WR_STATUS status = tftp.getStatus();
+//        if (status == TFTP_STATUS_SENDING) {
+//            break;
+//        } else if (cnt >= 5000) {
+//            QMessageBox::information(this, QStringLiteral("提示信息"),
+//                                     QStringLiteral("接收控制器命令超时！"),
+//                                     QMessageBox::Ok);
+//            return;
+//        }
+//    }
+
+//    tftp.writeFile(filePath);
+
+//    int timeoutCount = 0;
+//    const int TIMEOUT = 1000;
+//    while ((connectStatus == PRM_DISCONNECT) &&
+//           (timeoutCount < TIMEOUT)) {
+//        QThread::msleep(20);
+//        timeoutCount += 20;
+//    }
+//    switch (connectStatus) {
+//    case PRM_DISCONNECT:
+//        QMessageBox::information(this, QStringLiteral("提示信息"),
+//                                 QStringLiteral("连接控制器失败！"),
+//                                 QMessageBox::Ok);
+//        break;
+//    case PRM_REJECT:
+//        QMessageBox::information(this, QStringLiteral("提示信息"),
+//                                 QStringLiteral("控制器正在忙！"),
+//                                 QMessageBox::Ok);
+//        break;
+//    case PRM_AGREE:
+//        ui->pushButton_Update->setText(QStringLiteral("升级中..."));
+//        repaint();
+
+//        //等待控制器进入BootLoader
+//        QThread::msleep(1000);
+
+
+//        break;
+//    default:
+//        break;
+//    }
 
 }
 
@@ -379,11 +393,36 @@ void MainWindow::on_pushButton_Update_aotoGet_clicked()
 
 void MainWindow::on_action_Debug_triggered()
 {
-    if (debugOpen == true) {
-        return;
+    DialogDebug *dlgDebug = new DialogDebug();
+    dlgDebug->show();
+}
+
+void MainWindow::TFTP_ReceiveMsg(quint32 msg)
+{
+
+    switch (msg) {
+    case MSG_WRQ_OK:
+        qDebug() << "[TFTP] 写请求成功！";
+        break;
+    case MSG_WRQ_TIMEOUT:
+        qDebug() << "[TFTP] 写请求超时！";
+        break;
+    case MSG_WRQ_REPEAT:
+        qDebug() << "[TFTP] 写请求重发！";
+        break;
+    case MSG_WR_DATA_OK:
+        qDebug() << "[TFTP] 写数据包成功！";
+        break;
+    case MSG_WR_DATA_TIMEOUT:
+        qDebug() << "[TFTP] 写数据包超时！";
+        break;
+    case MSG_WR_DATA_REPEAT:
+        qDebug() << "[TFTP] 写数据包重发！";
+        break;
+    default:
+        qDebug() << "[TFTP] TFTP其他状态！";
+        break;
     }
-
-
 }
 
 

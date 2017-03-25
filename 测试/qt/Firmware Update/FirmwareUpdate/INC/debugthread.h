@@ -1,16 +1,17 @@
 ﻿#ifndef DEBUGTHREAD_H
 #define DEBUGTHREAD_H
 
-#include <QObject>
 #include <QThread>
 
-class DebugThread : public QObject, QThread
+class DebugThread : public QThread
 {
     Q_OBJECT
 public:
-    explicit DebugThread(QObject *parent = 0);
+    DebugThread();
 
 signals:
+    void Load_UI();
+    void refresh();
 
 public slots:
 

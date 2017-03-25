@@ -19,6 +19,7 @@ private slots:
     void autoScroll();
 
     void on_pushButton_Clear_clicked();
+    void timeoutNotify();
 
 private:
     Ui::DialogDebug *ui;    

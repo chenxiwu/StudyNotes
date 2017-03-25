@@ -4,22 +4,23 @@
 #include <QDebug>
 #include "utils.h"
 #include <QString>
+#include <QTimer>
+
 
 DialogDebug::DialogDebug(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DialogDebug)
 {
     ui->setupUi(this);
+    qDebug() << "打开DEBUG对话框！";
+
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()),
+            this, SLOT(timeoutNotify()));
+    timer->start(1000);
 
     connect(ui->textBrowser, SIGNAL(cursorPositionChanged()),
             this, SLOT(autoScroll()));
-
-    QFile file(LOG_NAME);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-      return;
-
-    QTextStream in(&file);
-    ui->textBrowser->setText(in.readAll());
 }
 
 DialogDebug::~DialogDebug()
@@ -40,4 +41,20 @@ void DialogDebug::on_pushButton_Clear_clicked()
 {
     QFile::remove(LOG_NAME);
     ui->textBrowser->clear();
+}
+
+void DialogDebug::timeoutNotify()
+{
+    QFile file(LOG_NAME);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+      return;
+
+    QTextStream in(&file);
+    QString source = ui->textBrowser->toPlainText();
+    QString newText = in.readAll();
+
+    if (source != newText) {
+        ui->textBrowser->clear();
+        ui->textBrowser->setText(newText);
+    }
 }

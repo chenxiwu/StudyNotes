@@ -6,6 +6,8 @@
 #include <QLabel>
 #include <QtNetwork>
 #include "debugthread.h"
+#include "dialogdebug.h"
+#include "tftp.h"
 
 enum CONNECT_PRM_STATUS {
     PRM_DISCONNECT = 0,
@@ -66,15 +68,12 @@ public:
 private slots:
     void on_pushButton_Open_clicked();
     void on_pushButton_Update_clicked();
-
     void on_tabWidget_currentChanged(int index);
     void readPendingDatagrams();
-
     void on_action_O_triggered();
-
     void on_pushButton_Update_aotoGet_clicked();
-
     void on_action_Debug_triggered();
+    void TFTP_ReceiveMsg(quint32 msg);
 
 private:
     Ui::MainWindow *ui;
@@ -83,9 +82,8 @@ private:
     int curPage;
     QUdpSocket *udpSocket;
     CONNECT_PRM_STATUS connectStatus;
-    bool debugOpen;
+    TFTP *tftp;
 
-    DebugThread thread;
 };
 
 #endif // MAINWINDOW_H

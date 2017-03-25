@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QtNetwork>
+#include <QThread>
 
 
 enum TFTP_OPERATION_CODE {
@@ -46,16 +47,34 @@ struct TFTP_ERROR {
 
 #pragma pack(pop)
 
-class TFTP : public QMainWindow {
+typedef enum {
+    MSG_WRQ_OK = 0,
+    MSG_WRQ_TIMEOUT,
+    MSG_WRQ_REPEAT,
+
+    MSG_WR_DATA_OK,
+    MSG_WR_DATA_TIMEOUT,
+    MSG_WR_DATA_REPEAT,
+}TFTP_MSG_TypeDef;
+
+class TFTP : public QThread {
     Q_OBJECT
 
 public:
-    explicit TFTP(const QString remoteIP);
+    explicit TFTP();
     ~TFTP();
 
     void writeReq(const QString &fileName);
     bool writeFile(const QString &filePath);
     TFTP_WR_STATUS getStatus();
+    void setRemoteIP(const QString &remoteIP);
+    void setFilePath(const QString &filePath);
+
+signals:
+    void sendMsg(quint32);
+
+protected:
+    void run();
 
 private slots:
     void readPendingDatagrams();
@@ -66,6 +85,8 @@ private:
     quint16 block;
     QString remoteIP;
     quint16 remotePort;
+    QString filePath;
+    QString fileName;
 };
 
 #endif // TFTP_H

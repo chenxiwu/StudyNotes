@@ -6,10 +6,9 @@
 #include "utils.h"
 
 
-TFTP::TFTP(const QString remoteIP)
+TFTP::TFTP()
 {
-    this->remoteIP = remoteIP;
-    this->remotePort = 69;
+    this->remotePort = 69;   
 
     udpSocket = new QUdpSocket(this);
     connect(udpSocket, SIGNAL(readyRead()),
@@ -28,6 +27,8 @@ void TFTP::writeReq(const QString &fileName)
 {
     wrStatus = TFTP_STATUS_WRQ;
 
+    qDebug() << "> 发送写请求...";
+
     /*
         2 bytes     string    1 byte     string   1 byte
        ------------------------------------------------
@@ -45,12 +46,13 @@ void TFTP::writeReq(const QString &fileName)
     datagram.append('\0');
 
     udpSocket->writeDatagram(datagram.data(), datagram.size(),
-                             QHostAddress(remoteIP), remotePort);
-
+                             QHostAddress(remoteIP), remotePort);   
 }
 
 bool TFTP::writeFile(const QString &filePath)
 {
+    qDebug() << "> 发送文件...";
+
     /*
         2 bytes     2 bytes      n bytes
         ----------------------------------
@@ -58,18 +60,18 @@ bool TFTP::writeFile(const QString &filePath)
         ----------------------------------
     */
     if (wrStatus != TFTP_STATUS_SENDING) {
-        QMessageBox::information(this, QStringLiteral("提示信息"),
-                                 QStringLiteral("内部状态错误！"),
-                                 QMessageBox::Ok);
+//        QMessageBox::information(this, QStringLiteral("提示信息"),
+//                                 QStringLiteral("内部状态错误！"),
+//                                 QMessageBox::Ok);
 
         return false;
     }
 
     QFile file(filePath);
     if (file.open(QFile::ReadOnly) == false) {
-        QMessageBox::information(this, QStringLiteral("提示信息"),
-                                 QStringLiteral("文件打开错误！"),
-                                 QMessageBox::Ok);
+//        QMessageBox::information(this, QStringLiteral("提示信息"),
+//                                 QStringLiteral("文件打开错误！"),
+//                                 QMessageBox::Ok);
 
         return false;
     }
@@ -102,9 +104,9 @@ bool TFTP::writeFile(const QString &filePath)
             QThread::msleep(1);
             cnt++;
             if (cnt >= 3000) {
-                QMessageBox::information(this, QStringLiteral("提示信息"),
-                                        QStringLiteral("发送超时！"),
-                                        QMessageBox::Ok);
+//                QMessageBox::information(this, QStringLiteral("提示信息"),
+//                                        QStringLiteral("发送超时！"),
+//                                        QMessageBox::Ok);
                 return false;
             }
         }
@@ -122,6 +124,46 @@ TFTP_WR_STATUS TFTP::getStatus()
     return wrStatus;
 }
 
+void TFTP::setRemoteIP(const QString &remoteIP)
+{
+    this->remoteIP = remoteIP;
+}
+
+void TFTP::setFilePath(const QString &filePath)
+{
+    this->filePath = filePath;
+    QFileInfo info(filePath);
+    this->fileName = info.fileName();
+}
+
+void TFTP::run()
+{
+    int count = 0;
+    int repeatCount = 0;
+    writeReq(fileName);
+    while(1) {
+        QThread::msleep(1);
+        count++;
+
+        if (wrStatus == TFTP_STATUS_SENDING) {
+            break;
+        } else if (count %= 1000) {
+            repeatCount++;
+            if (repeatCount >= 3) {
+                emit sendMsg(MSG_WRQ_TIMEOUT);
+                return;
+            }
+
+            writeReq(fileName);
+            emit sendMsg(MSG_WRQ_REPEAT);
+        }
+    }
+
+    while(1) {
+        ;
+    }
+}
+
 void TFTP::readPendingDatagrams()
 {
     while (udpSocket->hasPendingDatagrams()) {
@@ -131,16 +173,17 @@ void TFTP::readPendingDatagrams()
         datagram.resize(udpSocket->pendingDatagramSize());
         udpSocket->readDatagram(datagram.data(), datagram.size(), &remoteAddress, &remotePort);
 
-        struct TFTP_ACK *reply = (struct TFTP_ACK *)datagram.data();
-        if (reply->opCode == TFTP_CODE_ACK) {
-            if (wrStatus == TFTP_STATUS_WRQ) {
-                if (reply->block == 0) {
-                    wrStatus = TFTP_STATUS_SENDING;
-                    qDebug() << "Start Send...";
+        qDebug() << "> 收到数据！";
 
-                    //根据TFTP协议：服务器使用新的端口发送回复数据
-                    this->remotePort = remotePort;
-                }
+        struct TFTP_ACK *reply = (struct TFTP_ACK *)datagram.data();     
+        if (reply->opCode == htons(TFTP_CODE_ACK)) {
+            if (reply->block == 0) {
+                wrStatus = TFTP_STATUS_SENDING;
+                qDebug() << "> 收到写请求回复！";
+                qDebug() << "远程端口：" << remotePort;
+
+                //根据TFTP协议：服务器使用新的端口发送回复数据
+                this->remotePort = remotePort;
             } else if (wrStatus == TFTP_STATUS_SENDING) {
                 qDebug() << "Block：" << reply->block;
                 block = reply->block;
