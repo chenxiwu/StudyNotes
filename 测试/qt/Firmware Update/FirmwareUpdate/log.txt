@@ -1,0 +1,12 @@
+[DEBUG] "本地IP：192.168.2.44"
+[DEBUG] "本地IP：192.168.31.1"
+[DEBUG] "本地IP：192.168.233.1"
+[DEBUG] 按下[升级]按钮！
+[DEBUG] > 准备升级...
+[DEBUG] 控制器端口： "9999"
+[DEBUG] > 发送系统更新命令！
+[DEBUG] [TFTP] 写请求开始！
+[DEBUG] [TFTP] 写请求重发！
+[DEBUG] [TFTP] 写请求重发！
+[DEBUG] [TFTP] 写请求重发！
+[DEBUG] [TFTP] 写请求超时！

@@ -328,15 +328,9 @@ void MainWindow::on_pushButton_Update_clicked()
         return;
     }
 
-    QString updatePuttonText = ui->pushButton_Update->text();
-    ui->pushButton_Update->setText(QStringLiteral("正在连接..."));
     ui->pushButton_Update->setDisabled(true);
     repaint();
-
-    UpdateFirmWare_Handler();
-
-    ui->pushButton_Update->setText(updatePuttonText);
-    ui->pushButton_Update->setEnabled(true);
+    UpdateFirmWare_Handler();   
 }
 
 void MainWindow::on_tabWidget_currentChanged(int index)
@@ -375,6 +369,7 @@ void MainWindow::on_receiveMsg(quint32 msg)
         break;
     case MSG_WRQ_TIMEOUT:
         qDebug() << "[TFTP] 写请求超时！";
+        ui->pushButton_Update->setEnabled(true);
         break;
     case MSG_WRQ_REPEAT:
         qDebug() << "[TFTP] 写请求重发！";
@@ -384,15 +379,19 @@ void MainWindow::on_receiveMsg(quint32 msg)
         break;
     case MSG_WR_DATA_SUCCESS:
         qDebug() << "[TFTP] 写数据包成功！";
+        ui->pushButton_Update->setEnabled(true);
         break;
     case MSG_WR_DATA_TIMEOUT:
         qDebug() << "[TFTP] 写数据包超时！";
+        ui->pushButton_Update->setEnabled(true);
         break;
     case MSG_WR_DATA_UNKNOWN:
         qDebug() << "[TFTP] 写数据包未知错误！";
+        ui->pushButton_Update->setEnabled(true);
         break;
     default:
         qDebug() << "[TFTP] TFTP其他状态！";
+        ui->pushButton_Update->setEnabled(true);
         break;
     }
 }

@@ -12,7 +12,6 @@ DialogDebug::DialogDebug(QWidget *parent) :
     ui(new Ui::DialogDebug)
 {
     ui->setupUi(this);
-    qDebug() << "打开DEBUG对话框！";
 
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()),

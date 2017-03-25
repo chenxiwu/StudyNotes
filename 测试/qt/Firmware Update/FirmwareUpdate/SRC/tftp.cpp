@@ -31,8 +31,6 @@ void TFTP::writeReq()
 {
     wrStatus = TFTP_STATUS_WRQ;
 
-    qDebug() << "> 发送写请求...";
-
     /*
         2 bytes     string    1 byte     string   1 byte
        ------------------------------------------------
@@ -55,8 +53,6 @@ void TFTP::writeReq()
 
 TFTP_ERROR_ENUM TFTP::writeFile()
 {
-    qDebug() << "> 发送文件...";
-
     /*
         2 bytes     2 bytes      n bytes
         ----------------------------------
