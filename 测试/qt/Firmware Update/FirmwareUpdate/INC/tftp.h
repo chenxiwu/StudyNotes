@@ -48,33 +48,39 @@ struct TFTP_ERROR {
 #pragma pack(pop)
 
 typedef enum {
-    MSG_WRQ_OK = 0,
+    MSG_WRQ_START = 0,
+    MSG_WRQ_SUCCESS,
     MSG_WRQ_TIMEOUT,
     MSG_WRQ_REPEAT,
 
-    MSG_WR_DATA_OK,
+    MSG_WR_DATA_START,
+    MSG_WR_DATA_SUCCESS,
     MSG_WR_DATA_TIMEOUT,
-    MSG_WR_DATA_REPEAT,
-}TFTP_MSG_TypeDef;
+    MSG_WR_DATA_UNKNOWN,
+}TFTP_MSG_ENUM;
 
-class TFTP : public QThread {
+typedef enum {
+    ERROR_NONE = 0,
+    ERROR_INSIDE,
+    ERROR_FILE,
+    ERROR_TIMEOUT,
+}TFTP_ERROR_ENUM;
+
+class TFTP : public QObject {
     Q_OBJECT
 
 public:
-    explicit TFTP();
+    explicit TFTP(const QString &remoteIP, const QString &filePath);
     ~TFTP();
 
-    void writeReq(const QString &fileName);
-    bool writeFile(const QString &filePath);
+    void writeReq();
+    TFTP_ERROR_ENUM writeFile();
     TFTP_WR_STATUS getStatus();
     void setRemoteIP(const QString &remoteIP);
     void setFilePath(const QString &filePath);
 
 signals:
     void sendMsg(quint32);
-
-protected:
-    void run();
 
 private slots:
     void readPendingDatagrams();

@@ -5,15 +5,8 @@
 #include <QProgressBar>
 #include <QLabel>
 #include <QtNetwork>
-#include "debugthread.h"
 #include "dialogdebug.h"
 #include "tftp.h"
-
-enum CONNECT_PRM_STATUS {
-    PRM_DISCONNECT = 0,
-    PRM_AGREE,
-    PRM_REJECT,
-};
 
 namespace Ui {
 class MainWindow;
@@ -49,6 +42,20 @@ typedef struct {
 
 #pragma pack(pop)
 
+class TftpThread :public QThread {
+    Q_OBJECT
+
+protected:
+    void run();
+
+signals:
+    void sendMsg(quint32);
+
+public:
+    QString remotePort;
+    QString filePath;
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -73,7 +80,7 @@ private slots:
     void on_action_O_triggered();
     void on_pushButton_Update_aotoGet_clicked();
     void on_action_Debug_triggered();
-    void TFTP_ReceiveMsg(quint32 msg);
+    void on_receiveMsg(quint32 msg);
 
 private:
     Ui::MainWindow *ui;
@@ -81,8 +88,7 @@ private:
     QLabel *statusLabel;
     int curPage;
     QUdpSocket *udpSocket;
-    CONNECT_PRM_STATUS connectStatus;
-    TFTP *tftp;
+    TftpThread tftpThread;
 
 };
 

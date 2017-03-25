@@ -6,9 +6,13 @@
 #include "utils.h"
 
 
-TFTP::TFTP()
+TFTP::TFTP(const QString &remoteIP, const QString &filePath)
 {
     this->remotePort = 69;   
+    this->remoteIP = remoteIP;
+    this->filePath = filePath;
+    QFileInfo info(filePath);
+    this->fileName = info.fileName();
 
     udpSocket = new QUdpSocket(this);
     connect(udpSocket, SIGNAL(readyRead()),
@@ -23,7 +27,7 @@ TFTP::~TFTP()
     udpSocket = NULL;
 }
 
-void TFTP::writeReq(const QString &fileName)
+void TFTP::writeReq()
 {
     wrStatus = TFTP_STATUS_WRQ;
 
@@ -49,7 +53,7 @@ void TFTP::writeReq(const QString &fileName)
                              QHostAddress(remoteIP), remotePort);   
 }
 
-bool TFTP::writeFile(const QString &filePath)
+TFTP_ERROR_ENUM TFTP::writeFile()
 {
     qDebug() << "> 发送文件...";
 
@@ -60,20 +64,12 @@ bool TFTP::writeFile(const QString &filePath)
         ----------------------------------
     */
     if (wrStatus != TFTP_STATUS_SENDING) {
-//        QMessageBox::information(this, QStringLiteral("提示信息"),
-//                                 QStringLiteral("内部状态错误！"),
-//                                 QMessageBox::Ok);
-
-        return false;
+        return ERROR_INSIDE;
     }
 
     QFile file(filePath);
     if (file.open(QFile::ReadOnly) == false) {
-//        QMessageBox::information(this, QStringLiteral("提示信息"),
-//                                 QStringLiteral("文件打开错误！"),
-//                                 QMessageBox::Ok);
-
-        return false;
+        return ERROR_FILE;
     }
     QDataStream in(&file);
     file.close();
@@ -101,13 +97,10 @@ bool TFTP::writeFile(const QString &filePath)
         //等待服务器回复数据
         quint32 cnt = 0;
         while (block != nextBlock) {
-            QThread::msleep(1);
+            QThread::msleep(10);
             cnt++;
-            if (cnt >= 3000) {
-//                QMessageBox::information(this, QStringLiteral("提示信息"),
-//                                        QStringLiteral("发送超时！"),
-//                                        QMessageBox::Ok);
-                return false;
+            if (cnt >= 300) {
+                return ERROR_TIMEOUT;
             }
         }
 
@@ -116,7 +109,7 @@ bool TFTP::writeFile(const QString &filePath)
         }
     }
 
-    return true;
+    return ERROR_NONE;
 }
 
 TFTP_WR_STATUS TFTP::getStatus()
@@ -134,34 +127,6 @@ void TFTP::setFilePath(const QString &filePath)
     this->filePath = filePath;
     QFileInfo info(filePath);
     this->fileName = info.fileName();
-}
-
-void TFTP::run()
-{
-    int count = 0;
-    int repeatCount = 0;
-    writeReq(fileName);
-    while(1) {
-        QThread::msleep(1);
-        count++;
-
-        if (wrStatus == TFTP_STATUS_SENDING) {
-            break;
-        } else if (count %= 1000) {
-            repeatCount++;
-            if (repeatCount >= 3) {
-                emit sendMsg(MSG_WRQ_TIMEOUT);
-                return;
-            }
-
-            writeReq(fileName);
-            emit sendMsg(MSG_WRQ_REPEAT);
-        }
-    }
-
-    while(1) {
-        ;
-    }
 }
 
 void TFTP::readPendingDatagrams()
