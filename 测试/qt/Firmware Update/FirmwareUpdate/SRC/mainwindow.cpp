@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "dialogdebug.h"
 #include <QThread>
+#include "dialogabout.h"
 
 enum  PAGE_INDEX_ENUM{
     PAGE_AUTO = 0,
@@ -46,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent) :
     statusLabel = new QLabel();
     statusLabel->setMinimumSize(150, 24);
     statusLabel->setFrameStyle(QFrame::WinPanel | QFrame::Sunken);
-    statusLabel->setText(QStringLiteral("欢迎使用固件升级系统！"));
+    statusLabel->setText(QStringLiteral("欢迎使用固件升级助手！"));
     ui->statusBar->addWidget(statusLabel);
 
     progressBar = new QProgressBar();
@@ -63,6 +64,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //测试
     ui->comboBox_AutoControllerIP->addItem("192.168.2.234");
+
+    updateStatus = STATUS_DISCONNECT;
 }
 
 MainWindow::~MainWindow()
@@ -74,37 +77,15 @@ void MainWindow::updateLocalIP()
 {
     ui->comboBox_LocalIP->clear();
 
-    QHostInfo info = QHostInfo::fromName(QHostInfo::localHostName());
-    foreach(QHostAddress address, info.addresses()) {
-        if (address.protocol() == QAbstractSocket::IPv4Protocol) {
-            qDebug() << "本地IP：" + address.toString();
+    QVector<QHostAddress> hostAddress;
+    getLocalIP(hostAddress);
 
-            ui->comboBox_LocalIP->addItem(address.toString());
-        }
+    for (int i=0; i<hostAddress.count(); ++i) {
+        QHostAddress address = hostAddress.at(i);
+
+        qDebug() << "本地IP：" + address.toString();
+        ui->comboBox_LocalIP->addItem(address.toString());
     }
-}
-
-bool MainWindow::isIP_SegmentEqual(QString ip1, QString subnetMask1,
-                                   QString ip2, QString subnetMask2)
-{
-    QStringList ip_list1 = ip1.split('.');
-    QStringList mask_list1 = subnetMask1.split('.');
-    QStringList ip_list2 = ip2.split('.');
-    QStringList mask_list2 = subnetMask2.split('.');
-
-    if (ip_list1.count() != ip_list2.count()) {
-        return false;
-    }
-
-    for (int i=0; i<ip_list1.count(); ++i) {
-        int num1 = ip_list1.at(i).toInt() & mask_list1.at(i).toInt();
-        int num2 = ip_list2.at(i).toInt() & mask_list2.at(i).toInt();
-        if (num1 != num2) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 bool MainWindow::checkInput()
@@ -128,9 +109,9 @@ bool MainWindow::checkInput()
             return false;
         }
 
-        QString ip1 = ui->comboBox_LocalIP->currentText();
-        QString ip2 = ui->comboBox_AutoControllerIP->currentText();
-        if (isIP_SegmentEqual(ip1, "255.255.255.0", ip2, "255.255.255.0") == false) {
+        QString localIP = ui->comboBox_LocalIP->currentText();
+        QString remoteIP = ui->comboBox_AutoControllerIP->currentText();
+        if (isInSubnet(localIP, "255.255.255.0", remoteIP, "255.255.255.0") == false) {
             qDebug() << "本地IP与控制器IP不在同一网段！";
             QMessageBox::information(this, QStringLiteral("提示信息"),
                                      QStringLiteral("本地IP与控制器IP不在同一个网段！"),
@@ -148,39 +129,6 @@ bool MainWindow::checkInput()
             return false;
         }
     }
-
-    return true;
-}
-
-bool MainWindow::CMD_SystemUpdate(bool isUpdate)
-{
-    QByteArray updateCmd;
-    UDP_PROTECOL_HEAD_TypeDef head;
-    head.start = 0x1B;
-    head.addr = 0;
-    head.index = 0x21;
-    head.rsv1 = 0;
-    head.size = sizeof(CMD_UPDATE_TypeDef);
-    head.rsv2 = 0;
-    head.token = 0x0E;
-    updateCmd.append((const char *)&head, sizeof(head));
-
-    CMD_UPDATE_TypeDef body;
-    body.cmd = 0x0011;
-    body.update = isUpdate;
-    updateCmd.append((const char *)&body, sizeof(body));
-
-    UDP_PROTECOL_TAIL_TypeDef tail;
-    tail.crc = CRC16::get(0, (quint8 *)updateCmd.data(), updateCmd.size());
-    tail.end = 0x16;
-    updateCmd.append((const char *)&tail, sizeof(tail));
-
-    QString port = ui->lineEdit_AutoControllerPort->text();
-    qDebug() << "控制器端口：" << port;
-    udpSocket->writeDatagram(updateCmd.data(), updateCmd.size(),
-                         QHostAddress::Broadcast, port.toInt());
-
-    qDebug() << "> 发送系统更新命令！";
 
     return true;
 }
@@ -203,9 +151,12 @@ void MainWindow::readPendingDatagrams()
         datagram.resize(udpSocket->pendingDatagramSize());
         udpSocket->readDatagram(datagram.data(), datagram.size(), &remoteAddress, &remotePort);
 
+        qDebug() << "远程服务器信息：" << remoteAddress.toString();
+        //移除子网掩码
         QString remoteIP = remoteAddress.toString();
-        QRegExp exp("[A-Za-z:]");
-        remoteIP = remoteIP.remove(exp);
+        QRegExp exp("::");
+        quint8 index = remoteIP.indexOf(exp);
+        remoteIP = remoteIP.remove(0, index+2);
 
         UDP_PROTECOL_HEAD_TypeDef *head = (UDP_PROTECOL_HEAD_TypeDef *)datagram.data();
         UDP_PROTECOL_TAIL_TypeDef *tail = (UDP_PROTECOL_TAIL_TypeDef *)(datagram.data() +
@@ -221,9 +172,34 @@ void MainWindow::readPendingDatagrams()
         CMD_UPDATE_REPLY_TypeDef *body = (CMD_UPDATE_REPLY_TypeDef *)head->data;
         const quint8 STATUS_REPLY_OK = 0;
 
-        if (body->status == STATUS_REPLY_OK) {
-            qDebug() << "收到远程服务器回复！";
-            ui->comboBox_AutoControllerIP->addItem(remoteIP);
+        switch (updateStatus) {
+        case STATUS_DISCONNECT:
+            if (body->status == STATUS_REPLY_OK) {
+                qDebug() << "[状态] 发现设备！";
+                updateStatus = STATUS_CONNECT;
+                ui->comboBox_AutoControllerIP->addItem(remoteIP);
+
+    //            updateLocalIpByControllerIp(ui->comboBox_AutoControllerIP->currentText());
+            }
+            break;
+        case STATUS_CONNECT:
+            if (body->status == STATUS_REPLY_OK) {
+                qDebug() << "[状态] 控制器同意升级！";
+                updateStatus = STATUS_AGREE;
+
+                //开启TFTP线程
+                connect(&tftpThread, SIGNAL(sendMsg(quint32)),
+                        this, SLOT(on_tftpReceiveMsg(quint32)));
+                tftpThread.remotePort = ui->lineEdit_Firmware->text();
+                tftpThread.filePath = ui->comboBox_AutoControllerIP->currentText();
+                tftpThread.start();
+            } else {
+                qDebug() << "[状态] 控制器忙！";
+                updateStatus = STATUS_BUSY;
+            }
+            break;
+        default:
+            break;
         }
     }
 }
@@ -242,8 +218,8 @@ void MainWindow::openFile()
 void MainWindow::updateLocalIpByControllerIp(const QString &controllerIp)
 {
     for (int i=0; i<ui->comboBox_LocalIP->count(); ++i) {
-        if (isIP_SegmentEqual(ui->comboBox_LocalIP->itemText(i) , "255.255.255.0",
-                              controllerIp, "255.255.255.0") == true) {
+        if (isInSubnet(ui->comboBox_LocalIP->itemText(i), "255.255.255.0",
+                       controllerIp, "255.255.255.0") == true) {
             //自动更新下拉列表数据
             ui->comboBox_LocalIP->setCurrentIndex(i);
             break;
@@ -259,7 +235,7 @@ void MainWindow::on_pushButton_Open_clicked()
 /*
  * TFTP升级线程执行体
  */
-void TftpThread :: run()
+void TftpThread::run()
 {
     TFTP tftp(remotePort, filePath);
 
@@ -311,13 +287,16 @@ void MainWindow::UpdateFirmWare_Handler()
 {
     qDebug() << "> 准备升级...";
 
-    CMD_SystemUpdate(true);
+    QByteArray cmd;
+    CMD_SystemUpdate(cmd, true);
+    QString remoteIP = ui->comboBox_AutoControllerIP->currentText();
+    qDebug() << "控制器IP：" << remoteIP;
+    QString remotePort = ui->lineEdit_AutoControllerPort->text();
+    qDebug() << "控制器端口：" << remotePort;
+    udpSocket->writeDatagram(cmd.data(), cmd.size(),
+                         QHostAddress(remoteIP), remotePort.toInt());
 
-    connect(&tftpThread, SIGNAL(sendMsg(quint32)),
-            this, SLOT(on_receiveMsg(quint32)));
-    tftpThread.remotePort = ui->lineEdit_Firmware->text();
-    tftpThread.filePath = ui->comboBox_AutoControllerIP->currentText();
-    tftpThread.start();
+    QTimer::singleShot(1000, this, SLOT(on_timer1Timeout()));
 }
 
 void MainWindow::on_pushButton_Update_clicked()
@@ -343,22 +322,31 @@ void MainWindow::on_action_O_triggered()
     openFile();
 }
 
-
 void MainWindow::on_pushButton_Update_aotoGet_clicked()
 {
     qDebug() << "按下 [自动获取] 按钮！";
+    updateStatus = STATUS_DISCONNECT;
+    qDebug() << "[状态] 未连接！";
 
     ui->comboBox_AutoControllerIP->clear();   
-    CMD_SystemUpdate(false);
+    QByteArray cmd;
+    CMD_SystemUpdate(cmd, false);
+    qDebug() << "控制器IP：" << "广播";
+    QString remotePort = ui->lineEdit_AutoControllerPort->text();
+    qDebug() << "控制器端口：" << remotePort;
+    udpSocket->writeDatagram(cmd.data(), cmd.size(),
+                         QHostAddress::Broadcast, remotePort.toInt());
 }
 
 void MainWindow::on_action_Debug_triggered()
 {
     DialogDebug *dlgDebug = new DialogDebug();
+    dlgDebug->setWindowTitle(QStringLiteral("调试输出"));
+    dlgDebug->setWindowFlags(Qt::WindowCloseButtonHint);
     dlgDebug->show();
 }
 
-void MainWindow::on_receiveMsg(quint32 msg)
+void MainWindow::on_tftpReceiveMsg(quint32 msg)
 {
     switch (msg) {
     case MSG_WRQ_START:
@@ -369,7 +357,7 @@ void MainWindow::on_receiveMsg(quint32 msg)
         break;
     case MSG_WRQ_TIMEOUT:
         qDebug() << "[TFTP] 写请求超时！";
-        ui->pushButton_Update->setEnabled(true);
+        updateAfterDispose();
         break;
     case MSG_WRQ_REPEAT:
         qDebug() << "[TFTP] 写请求重发！";
@@ -379,22 +367,62 @@ void MainWindow::on_receiveMsg(quint32 msg)
         break;
     case MSG_WR_DATA_SUCCESS:
         qDebug() << "[TFTP] 写数据包成功！";
-        ui->pushButton_Update->setEnabled(true);
+        updateAfterDispose();
         break;
     case MSG_WR_DATA_TIMEOUT:
         qDebug() << "[TFTP] 写数据包超时！";
-        ui->pushButton_Update->setEnabled(true);
+        updateAfterDispose();
         break;
     case MSG_WR_DATA_UNKNOWN:
         qDebug() << "[TFTP] 写数据包未知错误！";
-        ui->pushButton_Update->setEnabled(true);
+        updateAfterDispose();
         break;
     default:
         qDebug() << "[TFTP] TFTP其他状态！";
-        ui->pushButton_Update->setEnabled(true);
+        updateAfterDispose();
         break;
     }
 }
 
+void MainWindow::updateAfterDispose()
+{
+    ui->pushButton_Update->setEnabled(true);
+}
 
+void MainWindow::on_timer1Timeout()
+{
+    switch (updateStatus) {
+    case STATUS_DISCONNECT:
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("找不到控制器！"),
+                                 QMessageBox::Ok);
+        break;
+    case STATUS_CONNECT:
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("接收控制器命令超时！"),
+                                 QMessageBox::Ok);
+        break;
+    case STATUS_BUSY:
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("控制器正在忙！"),
+                                 QMessageBox::Ok);
+        break;
+    default:
+        break;
+    }
 
+    updateAfterDispose();
+}
+
+void MainWindow::on_action_A_triggered()
+{
+    DialogAbout dlg;
+    dlg.setWindowTitle(QStringLiteral("关于"));
+    dlg.setWindowFlags(Qt::WindowCloseButtonHint);
+    dlg.exec();
+}
+
+void MainWindow::on_action_Log_triggered()
+{
+    on_action_Debug_triggered();
+}

@@ -250,7 +250,14 @@
     <addaction name="action_D"/>
     <addaction name="action_A"/>
    </widget>
+   <widget class="QMenu" name="menu_O">
+    <property name="title">
+     <string>选项(&amp;O)</string>
+    </property>
+    <addaction name="action_Log"/>
+   </widget>
    <addaction name="menu_F"/>
+   <addaction name="menu_O"/>
    <addaction name="menu_H"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -312,6 +319,15 @@
    </property>
   </action>
   <action name="action_Debug">
+   <property name="icon">
+    <iconset resource="Res/res.qrc">
+     <normaloff>:/Res/favicon.ico</normaloff>:/Res/favicon.ico</iconset>
+   </property>
+   <property name="text">
+    <string>日志</string>
+   </property>
+  </action>
+  <action name="action_Log">
    <property name="icon">
     <iconset resource="Res/res.qrc">
      <normaloff>:/Res/favicon.ico</normaloff>:/Res/favicon.ico</iconset>

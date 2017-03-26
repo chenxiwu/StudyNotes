@@ -26,7 +26,7 @@
   <widget class="QPushButton" name="pushButton_Clear">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>80</x>
      <y>190</y>
      <width>120</width>
      <height>31</height>
@@ -34,6 +34,19 @@
    </property>
    <property name="text">
     <string>清 空</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_Close">
+   <property name="geometry">
+    <rect>
+     <x>300</x>
+     <y>190</y>
+     <width>120</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>关 闭</string>
    </property>
   </widget>
  </widget>

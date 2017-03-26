@@ -21,6 +21,8 @@ private slots:
     void on_pushButton_Clear_clicked();
     void timeoutNotify();
 
+    void on_pushButton_Close_clicked();
+
 private:
     Ui::DialogDebug *ui;    
 };

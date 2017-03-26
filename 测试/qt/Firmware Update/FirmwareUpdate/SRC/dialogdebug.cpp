@@ -16,7 +16,7 @@ DialogDebug::DialogDebug(QWidget *parent) :
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()),
             this, SLOT(timeoutNotify()));
-    timer->start(1000);
+    timer->start(100);
 
     connect(ui->textBrowser, SIGNAL(cursorPositionChanged()),
             this, SLOT(autoScroll()));
@@ -56,4 +56,9 @@ void DialogDebug::timeoutNotify()
         ui->textBrowser->clear();
         ui->textBrowser->setText(newText);
     }
+}
+
+void DialogDebug::on_pushButton_Close_clicked()
+{
+    close();
 }
