@@ -8,8 +8,12 @@
 + 常用命令
 	+ 命令集
 		1. 画线：P + W
+		2. 测量间距： Ctrl + M
 	
 + 规	范
+	+ 原理图：
+		1. 引脚间距：100mil == 2.54mm
+	
 	+ 原理图库
 		+ Units
 			1. 选择“Use Imperial Unit System”
@@ -32,6 +36,13 @@
 	
 		+ 问题：画线时，怎么走斜线？
 		解决：按下“Shift + BackSpace”
+
+		+ 问题：元器件下面出现波浪线，编译出警告：
+		`Details Duplicate Component Designators C? at 95,520 and 95,450`
+		解决：因为注释出现重名，重新注释一遍，不能使用同一编号。	
+		
+		+ 问题：怎么修改单位？
+		单位：右键选择 Options -- Document Options -- Imperial unit used，选择 Mils
 	
 	+ 原理图库
 		+ 问题：画原理图库时，怎么改变引脚方向？
@@ -40,3 +51,13 @@
 		+ 问题：怎么下载原理图库？
 		解决：http://techdocs.altium.com/display/ADOH/Download+Libraries
 
+		+ 问题：怎么安装常用元器件库？
+		解决：进入Altium官网，http://www.altium.com.cn/，依次进入：Resources / Design Content / Unified Components,
+		找到相关库下载。
+
+	+ 语言
+		+ 问题：怎么切换中文显示？
+		解决：选择 Preference -- System -- General -- Localization -- Use Localized resources 
+		-- Display localized hints only，重启软件。
+
+	
