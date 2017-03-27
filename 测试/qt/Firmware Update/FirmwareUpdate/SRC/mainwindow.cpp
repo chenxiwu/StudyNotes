@@ -62,9 +62,6 @@ MainWindow::MainWindow(QWidget *parent) :
     label->setOpenExternalLinks(true);
     ui->statusBar->addPermanentWidget(label);
 
-    //测试
-    ui->comboBox_AutoControllerIP->addItem("192.168.2.234");
-
     updateStatus = STATUS_DISCONNECT;
 }
 
@@ -154,9 +151,9 @@ void MainWindow::readPendingDatagrams()
         qDebug() << "远程服务器信息：" << remoteAddress.toString();
         //移除子网掩码
         QString remoteIP = remoteAddress.toString();
-        QRegExp exp("::");
-        quint8 index = remoteIP.indexOf(exp);
-        remoteIP = remoteIP.remove(0, index+2);
+        QRegExp exp(":");
+        quint8 index = remoteIP.lastIndexOf(exp);
+        remoteIP = remoteIP.remove(0, index+1);
 
         UDP_PROTECOL_HEAD_TypeDef *head = (UDP_PROTECOL_HEAD_TypeDef *)datagram.data();
         UDP_PROTECOL_TAIL_TypeDef *tail = (UDP_PROTECOL_TAIL_TypeDef *)(datagram.data() +
@@ -188,17 +185,23 @@ void MainWindow::readPendingDatagrams()
                 updateStatus = STATUS_AGREE;
 
                 //开启TFTP线程
-                connect(&tftpThread, SIGNAL(sendMsg(quint32)),
+                tftpThread = new TftpThread();
+                connect(tftpThread, SIGNAL(sendMsg(quint32)),
                         this, SLOT(on_tftpReceiveMsg(quint32)));
-                tftpThread.remotePort = ui->lineEdit_Firmware->text();
-                tftpThread.filePath = ui->comboBox_AutoControllerIP->currentText();
-                tftpThread.start();
+                connect(tftpThread, SIGNAL(sendProgress(quint32)),
+                        this, SLOT(on_tftpUpdateProgress(quint32)));
+                connect(tftpThread, &TftpThread::finished,
+                        tftpThread, &QObject::deleteLater);
+                tftpThread->remoteIP = ui->comboBox_AutoControllerIP->currentText();
+                tftpThread->filePath = ui->lineEdit_Firmware->text();
+                tftpThread->start();
             } else {
                 qDebug() << "[状态] 控制器忙！";
                 updateStatus = STATUS_BUSY;
             }
             break;
         default:
+             qDebug() << "[状态] 未知状态！";
             break;
         }
     }
@@ -237,7 +240,9 @@ void MainWindow::on_pushButton_Open_clicked()
  */
 void TftpThread::run()
 {
-    TFTP tftp(remotePort, filePath);
+    TFTP tftp(remoteIP, filePath);
+    connect(&tftp, SIGNAL(sendProgress(quint32)),
+            this, SLOT(on_receiveProgress(quint32)));
 
     int count = 0;
     int repeatCount = 0;
@@ -246,15 +251,16 @@ void TftpThread::run()
     tftp.writeReq();
 
     while(1) {
-        QThread::msleep(100);
+        QThread::msleep(10);
+        QCoreApplication::processEvents();
         count++;
 
         if (tftp.getStatus() == TFTP_STATUS_SENDING) {
             tftp.sendMsg(MSG_WRQ_SUCCESS);
             break;
-        } else if (count % 10 == 0) {
+        } else if (count % 100 == 0) {
             repeatCount++;
-            if (repeatCount > 3) {
+            if (repeatCount > 10) {
                 emit sendMsg(MSG_WRQ_TIMEOUT);
                 return;
             }
@@ -281,6 +287,14 @@ void TftpThread::run()
         emit sendMsg(MSG_WR_DATA_UNKNOWN);
         break;
     }
+
+    exit();
+    qDebug() << "线程结束！";
+}
+
+void MainWindow::on_receiveProgress(quint32 progress)
+{
+    emit sendProgress(progress);
 }
 
 void MainWindow::UpdateFirmWare_Handler()
@@ -289,6 +303,7 @@ void MainWindow::UpdateFirmWare_Handler()
 
     QByteArray cmd;
     CMD_SystemUpdate(cmd, true);
+
     QString remoteIP = ui->comboBox_AutoControllerIP->currentText();
     qDebug() << "控制器IP：" << remoteIP;
     QString remotePort = ui->lineEdit_AutoControllerPort->text();
@@ -296,7 +311,7 @@ void MainWindow::UpdateFirmWare_Handler()
     udpSocket->writeDatagram(cmd.data(), cmd.size(),
                          QHostAddress(remoteIP), remotePort.toInt());
 
-    QTimer::singleShot(1000, this, SLOT(on_timer1Timeout()));
+    QTimer::singleShot(3000, this, SLOT(on_timer1Timeout()));
 }
 
 void MainWindow::on_pushButton_Update_clicked()
@@ -367,7 +382,12 @@ void MainWindow::on_tftpReceiveMsg(quint32 msg)
         break;
     case MSG_WR_DATA_SUCCESS:
         qDebug() << "[TFTP] 写数据包成功！";
+        qDebug() << "升级完成！";
+        updateStatus = STATUS_CONNECT;
         updateAfterDispose();
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("升级成功！"),
+                                 QMessageBox::Ok);
         break;
     case MSG_WR_DATA_TIMEOUT:
         qDebug() << "[TFTP] 写数据包超时！";
@@ -384,9 +404,18 @@ void MainWindow::on_tftpReceiveMsg(quint32 msg)
     }
 }
 
+void MainWindow::on_tftpUpdateProgress(quint32 progress)
+{
+    if (progress == 0) {
+        progressBar->show();
+    }
+    progressBar->setValue(progress);
+}
+
 void MainWindow::updateAfterDispose()
 {
     ui->pushButton_Update->setEnabled(true);
+    progressBar->hide();
 }
 
 void MainWindow::on_timer1Timeout()
@@ -399,7 +428,7 @@ void MainWindow::on_timer1Timeout()
         break;
     case STATUS_CONNECT:
         QMessageBox::information(this, QStringLiteral("提示信息"),
-                                 QStringLiteral("接收控制器命令超时！"),
+                                 QStringLiteral("控制器未响应！"),
                                  QMessageBox::Ok);
         break;
     case STATUS_BUSY:
@@ -407,6 +436,8 @@ void MainWindow::on_timer1Timeout()
                                  QStringLiteral("控制器正在忙！"),
                                  QMessageBox::Ok);
         break;
+    case STATUS_AGREE:
+        return;
     default:
         break;
     }

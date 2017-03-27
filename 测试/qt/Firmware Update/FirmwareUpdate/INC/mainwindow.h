@@ -19,10 +19,14 @@ protected:
     void run();
 
 signals:
-    void sendMsg(quint32);
+    void sendMsg(quint32);  
+    void sendProgress(quint32);
+
+private slots:
+    void on_receiveProgress(quint32);
 
 public:
-    QString remotePort;
+    QString remoteIP;
     QString filePath;
 };
 
@@ -57,6 +61,7 @@ private slots:
     void on_pushButton_Update_aotoGet_clicked();
     void on_action_Debug_triggered();
     void on_tftpReceiveMsg(quint32 msg);
+    void on_tftpUpdateProgress(quint32 progress);
     void on_timer1Timeout();
     void on_action_A_triggered();
     void on_action_Log_triggered();
@@ -67,8 +72,8 @@ private:
     QLabel *statusLabel;
     int curPage;
     QUdpSocket *udpSocket;
-    TftpThread tftpThread;
     UPDATE_STATUS_TypeDef updateStatus;
+    TftpThread *tftpThread;
 };
 
 #endif // MAINWINDOW_H

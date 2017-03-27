@@ -79,8 +79,10 @@
 	+ 将项目文件 源文件放入/SRC文件夹 头文件放入/INC文件夹，编译出错
 		1. 在.pro 文件中添加：INCLUDEPATH += $$PWD/INC/ 即可编译通过
 
-
 	+ 在QT中数字0要使用'\0'表示
+
+	+ 使用回调函数时，如果在类中，必须定义为静态成员函数。
+	如果在类外部，必须定义为全局函数。	
 
 + 常见问题
 
@@ -116,3 +118,14 @@
 	+ 原因：在系统环境变量Path路径中，还有一个独立的MinGW，而且这个 
 	环境变量 `C:\MinGW\bin\`放在了`C:\Qt\Qt5.8.0\5.8\mingw53_32\bin\`的前面。导致QT编译时使用的是前面的动态链接库。
 	解决：将他们的顺序对调。
+
+	+ 问题：UDP通讯时，如果阻塞线程，必须等到线程执行结束，才能收到UDP数据？
+	解决：UDP接收数据使用信号-槽机制，线程执行过程中，
+	可以调用QCoreApplication::processEvents();暂时放弃CPU，执行其他任务。
+
+	+ 问题：在run()最后，调用exit()，多线程没有停止？
+	解决：需要绑定信号和槽： 
+	```C	
+	connect(tftpThread, &TftpThread::finished,
+    tftpThread, &QObject::deleteLater);
+	```

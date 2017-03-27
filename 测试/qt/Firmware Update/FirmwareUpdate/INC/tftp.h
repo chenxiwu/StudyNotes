@@ -81,6 +81,7 @@ public:
 
 signals:
     void sendMsg(quint32);
+    void sendProgress(quint32);
 
 private slots:
     void readPendingDatagrams();
