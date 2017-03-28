@@ -51,7 +51,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->statusBar->addWidget(statusLabel);
 
     progressBar = new QProgressBar();
-    progressBar->setMaximumSize(100, 16);
+    progressBar->setMaximumSize(300, 16);
     ui->statusBar->addWidget(progressBar);
     progressBar->hide();
 
@@ -106,16 +106,16 @@ bool MainWindow::checkInput()
             return false;
         }
 
-        QString localIP = ui->comboBox_LocalIP->currentText();
-        QString remoteIP = ui->comboBox_AutoControllerIP->currentText();
-        if (isInSubnet(localIP, "255.255.255.0", remoteIP, "255.255.255.0") == false) {
-            qDebug() << "本地IP与控制器IP不在同一网段！";
-            QMessageBox::information(this, QStringLiteral("提示信息"),
-                                     QStringLiteral("本地IP与控制器IP不在同一个网段！"),
-                                     QMessageBox::Ok);
+//        QString localIP = ui->comboBox_LocalIP->currentText();
+//        QString remoteIP = ui->comboBox_AutoControllerIP->currentText();
+//        if (isInSubnet(localIP, "255.255.255.0", remoteIP, "255.255.255.0") == false) {
+//            qDebug() << "本地IP与控制器IP不在同一网段！";
+//            QMessageBox::information(this, QStringLiteral("提示信息"),
+//                                     QStringLiteral("本地IP与控制器IP不在同一个网段！"),
+//                                     QMessageBox::Ok);
 
-            return false;
-        }
+//            return false;
+//        }
 
         if (ui->lineEdit_AutoControllerPort->text().isEmpty() == true) {
             qDebug() << "控制器端口为空！";
@@ -175,8 +175,6 @@ void MainWindow::readPendingDatagrams()
                 qDebug() << "[状态] 发现设备！";
                 updateStatus = STATUS_CONNECT;
                 ui->comboBox_AutoControllerIP->addItem(remoteIP);
-
-    //            updateLocalIpByControllerIp(ui->comboBox_AutoControllerIP->currentText());
             }
             break;
         case STATUS_CONNECT:
@@ -184,14 +182,13 @@ void MainWindow::readPendingDatagrams()
                 qDebug() << "[状态] 控制器同意升级！";
                 updateStatus = STATUS_AGREE;
 
-                //开启TFTP线程
-                tftpThread = new TftpThread();
+                TftpThread *tftpThread = new TftpThread();
                 connect(tftpThread, SIGNAL(sendMsg(quint32)),
                         this, SLOT(on_tftpReceiveMsg(quint32)));
                 connect(tftpThread, SIGNAL(sendProgress(quint32)),
                         this, SLOT(on_tftpUpdateProgress(quint32)));
-                connect(tftpThread, &TftpThread::finished,
-                        tftpThread, &QObject::deleteLater);
+                connect(tftpThread, SIGNAL(finished()),
+                        tftpThread, SLOT(deleteLater()));
                 tftpThread->remoteIP = ui->comboBox_AutoControllerIP->currentText();
                 tftpThread->filePath = ui->lineEdit_Firmware->text();
                 tftpThread->start();
@@ -292,14 +289,14 @@ void TftpThread::run()
     qDebug() << "线程结束！";
 }
 
-void MainWindow::on_receiveProgress(quint32 progress)
+void TftpThread::on_receiveProgress(quint32 progress)
 {
     emit sendProgress(progress);
 }
 
-void MainWindow::UpdateFirmWare_Handler()
+void MainWindow::AutoUpdateFirmWare_Handler()
 {
-    qDebug() << "> 准备升级...";
+    qDebug() << "》》》 自动升级 《《《";
 
     QByteArray cmd;
     CMD_SystemUpdate(cmd, true);
@@ -314,6 +311,22 @@ void MainWindow::UpdateFirmWare_Handler()
     QTimer::singleShot(3000, this, SLOT(on_timer1Timeout()));
 }
 
+void MainWindow::ManualUpdateFirmWare_Handler()
+{
+    qDebug() << "》》》 手动升级 《《《";
+
+    TftpThread *tftpThread = new TftpThread();
+    connect(tftpThread, SIGNAL(sendMsg(quint32)),
+            this, SLOT(on_tftpReceiveMsg(quint32)));
+    connect(tftpThread, SIGNAL(sendProgress(quint32)),
+            this, SLOT(on_tftpUpdateProgress(quint32)));
+    connect(tftpThread, SIGNAL(finished()),
+            tftpThread, SLOT(deleteLater()));
+    tftpThread->remoteIP = ui->lineEdit_ManualControllerIP->text();
+    tftpThread->filePath = ui->lineEdit_Firmware->text();
+    tftpThread->start();
+}
+
 void MainWindow::on_pushButton_Update_clicked()
 {
     qDebug() << "按下[升级]按钮！";
@@ -322,14 +335,26 @@ void MainWindow::on_pushButton_Update_clicked()
         return;
     }
 
+    ui->pushButton_Open->setDisabled(true);
+    ui->pushButton_Update_aotoGet->setDisabled(true);
     ui->pushButton_Update->setDisabled(true);
     repaint();
-    UpdateFirmWare_Handler();   
+
+    if (curPage == PAGE_AUTO) {
+        AutoUpdateFirmWare_Handler();
+    } else {
+        ManualUpdateFirmWare_Handler();
+    }
 }
 
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
     curPage = index;
+    if (curPage == PAGE_AUTO) {
+        qDebug() << "进入自动模式";
+    } else {
+        qDebug() << "进入手动模式";
+    }
 }
 
 void MainWindow::on_action_O_triggered()
@@ -350,7 +375,7 @@ void MainWindow::on_pushButton_Update_aotoGet_clicked()
     QString remotePort = ui->lineEdit_AutoControllerPort->text();
     qDebug() << "控制器端口：" << remotePort;
     udpSocket->writeDatagram(cmd.data(), cmd.size(),
-                         QHostAddress::Broadcast, remotePort.toInt());
+                        QHostAddress::Broadcast, remotePort.toInt());
 }
 
 void MainWindow::on_action_Debug_triggered()
@@ -371,8 +396,11 @@ void MainWindow::on_tftpReceiveMsg(quint32 msg)
         qDebug() << "[TFTP] 写请求成功！";
         break;
     case MSG_WRQ_TIMEOUT:
-        qDebug() << "[TFTP] 写请求超时！";
+        qDebug() << "[TFTP] 接收写请求回复超时！";
         updateAfterDispose();
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("与控制器连接失败！"),
+                                 QMessageBox::Ok);
         break;
     case MSG_WRQ_REPEAT:
         qDebug() << "[TFTP] 写请求重发！";
@@ -390,12 +418,18 @@ void MainWindow::on_tftpReceiveMsg(quint32 msg)
                                  QMessageBox::Ok);
         break;
     case MSG_WR_DATA_TIMEOUT:
-        qDebug() << "[TFTP] 写数据包超时！";
+        qDebug() << "[TFTP] 接收数据包回复超时！";
         updateAfterDispose();
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("接收数据包回复超时！"),
+                                 QMessageBox::Ok);
         break;
     case MSG_WR_DATA_UNKNOWN:
         qDebug() << "[TFTP] 写数据包未知错误！";
         updateAfterDispose();
+        QMessageBox::information(this, QStringLiteral("提示信息"),
+                                 QStringLiteral("写数据包未知错误！"),
+                                 QMessageBox::Ok);
         break;
     default:
         qDebug() << "[TFTP] TFTP其他状态！";
@@ -414,6 +448,8 @@ void MainWindow::on_tftpUpdateProgress(quint32 progress)
 
 void MainWindow::updateAfterDispose()
 {
+    ui->pushButton_Open->setEnabled(true);
+    ui->pushButton_Update_aotoGet->setEnabled(true);
     ui->pushButton_Update->setEnabled(true);
     progressBar->hide();
 }

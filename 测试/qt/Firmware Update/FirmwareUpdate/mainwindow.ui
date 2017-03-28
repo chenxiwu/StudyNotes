@@ -76,11 +76,11 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
-      <string>自动升级</string>
+      <string>自动模式</string>
      </attribute>
      <widget class="QLineEdit" name="lineEdit_AutoControllerPort">
       <property name="geometry">
@@ -147,7 +147,7 @@
     </widget>
     <widget class="QWidget" name="tab_2">
      <attribute name="title">
-      <string>手动升级</string>
+      <string>手动模式</string>
      </attribute>
      <widget class="QLineEdit" name="lineEdit_ManualControllerPort">
       <property name="geometry">
@@ -233,7 +233,7 @@
      <x>0</x>
      <y>0</y>
      <width>500</width>
-     <height>17</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_F">

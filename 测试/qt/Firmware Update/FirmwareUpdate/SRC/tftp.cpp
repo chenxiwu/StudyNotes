@@ -101,27 +101,34 @@ TFTP_ERROR_ENUM TFTP::writeFile()
             sendDone = true;
         }
         datagram.append(buff, rdLenth);
-        udpSocket->writeDatagram(datagram.data(), datagram.size(),
-                                 QHostAddress(remoteIP), remotePort);
-        curFileSize += rdLenth;
-        curProgress = (float)curFileSize / totalFileSize * totalProgress;
-        emit sendProgress(curProgress);
-
-        datagram.clear();
 
         //等待服务器回复数据
         quint32 cnt = 0;
         while (block != nextBlock) {
-            QThread::msleep(10);
+            if (cnt % 1000 == 0) {
+                udpSocket->writeDatagram(datagram.data(), datagram.size(),
+                                            QHostAddress(remoteIP), remotePort);
+                if (cnt) {
+                    qDebug() << "[TFTP] 重发数据包!";
+                }
+            }
+
+            QThread::msleep(1);
             QCoreApplication::processEvents();
 
             cnt++;
-            if (cnt >= 1000) {
+            if (cnt >= 10000) {
                 file.close();
 
                 return ERROR_TIMEOUT;
             }
         }
+
+        curFileSize += rdLenth;
+        curProgress = (float)curFileSize / totalFileSize * totalProgress;
+        emit sendProgress(curProgress);
+
+        datagram.clear();
     }
 
     file.close();

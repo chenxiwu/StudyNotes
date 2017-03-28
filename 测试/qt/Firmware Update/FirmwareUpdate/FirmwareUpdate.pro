@@ -36,10 +36,8 @@ HEADERS  += \
     INC/mainwindow.h \
     INC/tftp.h \
     INC/crc16.h \
-    dialogdebug.h \
     INC/dialogdebug.h \
     INC/utils.h \
-    SRC/debugthread.h \
     INC/dialogabout.h
 
 FORMS    += mainwindow.ui \

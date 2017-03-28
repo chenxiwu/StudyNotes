@@ -15,6 +15,10 @@ class MainWindow;
 class TftpThread :public QThread {
     Q_OBJECT
 
+public:
+    QString remoteIP;
+    QString filePath;
+
 protected:
     void run();
 
@@ -25,9 +29,6 @@ signals:
 private slots:
     void on_receiveProgress(quint32);
 
-public:
-    QString remoteIP;
-    QString filePath;
 };
 
 typedef enum {
@@ -49,7 +50,8 @@ public:
     void initSocket();
     void openFile();
     void updateLocalIpByControllerIp(const QString &controllerIp);
-    void UpdateFirmWare_Handler();
+    void AutoUpdateFirmWare_Handler();
+    void ManualUpdateFirmWare_Handler();
     void updateAfterDispose();
 
 private slots:
@@ -72,8 +74,7 @@ private:
     QLabel *statusLabel;
     int curPage;
     QUdpSocket *udpSocket;
-    UPDATE_STATUS_TypeDef updateStatus;
-    TftpThread *tftpThread;
+    UPDATE_STATUS_TypeDef updateStatus;   
 };
 
 #endif // MAINWINDOW_H
