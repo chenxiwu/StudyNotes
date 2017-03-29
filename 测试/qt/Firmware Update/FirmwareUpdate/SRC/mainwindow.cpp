@@ -182,7 +182,7 @@ void MainWindow::readPendingDatagrams()
                 qDebug() << "[状态] 控制器同意升级！";
                 updateStatus = STATUS_AGREE;
 
-                TftpThread *tftpThread = new TftpThread();
+                TftpThread *tftpThread = new TftpThread(this);
                 connect(tftpThread, SIGNAL(sendMsg(quint32)),
                         this, SLOT(on_tftpReceiveMsg(quint32)));
                 connect(tftpThread, SIGNAL(sendProgress(quint32)),
@@ -235,6 +235,11 @@ void MainWindow::on_pushButton_Open_clicked()
 /*
  * TFTP升级线程执行体
  */
+TftpThread::TftpThread(QObject *parent) : QThread(parent)
+{
+    qDebug() << "[TFTP] 线程构造函数!";
+}
+
 void TftpThread::run()
 {
     TFTP tftp(remoteIP, filePath);
@@ -315,7 +320,7 @@ void MainWindow::ManualUpdateFirmWare_Handler()
 {
     qDebug() << "》》》 手动升级 《《《";
 
-    TftpThread *tftpThread = new TftpThread();
+    TftpThread *tftpThread = new TftpThread(this);
     connect(tftpThread, SIGNAL(sendMsg(quint32)),
             this, SLOT(on_tftpReceiveMsg(quint32)));
     connect(tftpThread, SIGNAL(sendProgress(quint32)),

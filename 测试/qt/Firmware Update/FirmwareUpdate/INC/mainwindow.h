@@ -12,12 +12,13 @@ namespace Ui {
 class MainWindow;
 }
 
-class TftpThread :public QThread {
+class TftpThread : public QThread {
     Q_OBJECT
 
 public:
     QString remoteIP;
     QString filePath;
+    TftpThread(QObject *parent);
 
 protected:
     void run();
