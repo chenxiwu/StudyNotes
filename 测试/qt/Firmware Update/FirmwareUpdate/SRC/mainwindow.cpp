@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QFile::remove(LOG_NAME);
     curPage = PAGE_AUTO;
-    setWindowTitle(QStringLiteral("控制器固件升级"));
+    setWindowTitle(QStringLiteral("控制器固件升级助手"));
     setFixedSize(this->width(), this->height());
 
     updateLocalIP();
@@ -47,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent) :
     statusLabel = new QLabel();
     statusLabel->setMinimumSize(150, 24);
     statusLabel->setFrameStyle(QFrame::WinPanel | QFrame::Sunken);
-    statusLabel->setText(QStringLiteral("欢迎使用固件升级助手！"));
+    statusLabel->setText(QStringLiteral("欢迎使用！"));
     ui->statusBar->addWidget(statusLabel);
 
     progressBar = new QProgressBar();
