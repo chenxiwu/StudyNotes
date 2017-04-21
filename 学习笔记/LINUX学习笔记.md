@@ -918,7 +918,20 @@
 		+ 问题：`输入：mysql> show databases；`,弹出`ERROR 1820 (HY000): You must reset your password using ALTER USER statement before executing this statement.`
 		> 解决：
 			1. 输入 `set password=password('密码<需要8位以上，包含大小写字母、数字、符号>');`
-			
+		
++ QT
+	+ 安装
+		1. 从QT官网下载QT5，https://www.qt.io/download-open-source/#section-2
+		2. 按照官方的帮助文档，安装QT。参考： http://doc.qt.io/qt-5/linux.html
+		3. Ubuntu：`sudo apt-get install build-essential libgl1-mesa-dev`
+		4. Fedora：
+		```C
+		sudo yum groupinstall "C Development Tools and Libraries"
+		sudo yum install mesa-libGL-devel
+		```
+
+
+	
 + 知识点
 	+ `dd iflag=dsync oflag=dsync if=./E4412_D.bl1.bin of=$1 seek=$signed_bl1_position`：
 		1. 表示从if指定的位置，读取内容到缓冲区。然后写入到of指定的设备的seek偏移量的位置。

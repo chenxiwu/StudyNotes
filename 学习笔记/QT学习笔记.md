@@ -35,6 +35,10 @@
 		+ 设置MinGW环境变量： 
 		1. 新建 MINGW_HOME 值为C:\Qt\Qt5.8.0\Tools\mingw530_32 （你的安装路径）
 		2. path变量添加“;%MINGW_HOME%\bin;"
+
++ 常用方法
+	+ 整形转字符串
+		1. QString::number()方法
 	
 + 常用操作
 	+ 使用快捷键
