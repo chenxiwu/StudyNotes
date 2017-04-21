@@ -73,6 +73,9 @@
 		2. 删除标签： git tag -d tagName
 		3. 查看标签： git tag
 
+	+ git diff 
+		1. +filename，可以查看当前已经add的文件版本，和当前文件之间的差别。
+
 + 过滤器
 	+ 忽略文件夹
 		+ 新建文件 .gitignore

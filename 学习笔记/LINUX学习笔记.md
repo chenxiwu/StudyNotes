@@ -134,7 +134,7 @@
 			+ lsb_release -a
 		
 		+ 打印开机信息
-				1. dmesg
+			1. dmesg
 		
 		+ 驱动模块
 			+ 显示模块：lsmod
@@ -271,6 +271,9 @@
 			+ 命令行参数移位：执行一次shift操作，参数列表向左移动一位，
 			同时参数个数减一 
 			格式：shift n #n表示移位n次
+
+		+ apt-chche 搜索安装包关键字
+			+ apt-cache search + <关键字>
 	
 + Linux-fedora
 	+ 安装软件
@@ -918,6 +921,7 @@
 		+ 问题：`输入：mysql> show databases；`,弹出`ERROR 1820 (HY000): You must reset your password using ALTER USER statement before executing this statement.`
 		> 解决：
 			1. 输入 `set password=password('密码<需要8位以上，包含大小写字母、数字、符号>');`
+<<<<<<< HEAD
 		
 + QT
 	+ 安装
@@ -932,8 +936,88 @@
 
 
 	
+=======
+			
++ gdb
+	+ 主机环境
+		1. ubuntu-16.04.2-desktop-i386(32位)
+	+ gdb版本
+		1. gdb-7.9.1
+	+ 参考
+		> http://blog.csdn.net/quyang0602/article/details/7368893
+	+ 编译 arm-linux-gdb
+		1. 配置 
+			> ./configure --target=arm-linux --prefix=/usr/local/arm-gdb
+		2. make 
+			问题：
+			```C
+			configure: error: no termcap library found
+			Makefile:8582: recipe for target 'configure-gdb' failed
+			```
+			解决：
+			> apt-get install libncurses5-dev
+		3. make install
+			问题：
+			```C
+			/opt/gdb-7.9.1/missing: makeinfo: not found
+			```
+			解决：apt-get install texinfo
+		4. vim /etc/profile，添加：`/usr/local/arm-gdb/bin/`		
+	+ 在目标板安装gdbserver
+		1. `cd gdb-7.7/gdb/gdbserver`
+		2. `./configure --target=arm-linux --host=arm-linux`
+		（--target=arm-linux表示目标平台，
+		--host表示主机端运行的是arm-linux-gdb，不需要配置—prefix，
+		因为gdbserver不在主机端安装运行）
+		3. `make CC=/opt/FriendlyARM/toolschain/4.5.1/bin/arm-linux-gcc`，注意：必须使用绝对地址
+			问题：
+			```C
+			fatal error: sys/reg.h: No such file or directory
+			```
+			解决：
+			找到config.h中的宏定义：
+			```C			
+			/* Define to 1 if you have the <sys/reg.h> header file. */
+			#define HAVE_SYS_REG_H 1
+			```		
+			屏蔽掉该宏定义。`make clear`，然后重新编译
+		4. 生成最终文件在当前目录：`gdbserver`
+	+ 调试
+		1. 将文件 gdbserver 拷贝到目标板，加入系统环境变量
+		2. 在目标板执行：gdbserver 192.168.2.195:7777 xxx
+		其中IP地址是宿主机的IP，端口为大于1023的调试端口，xxx表示应用程序
+		3. 在主机执行：arm-linu-gdb xxx
+		4. 在主机执行：target remote 192.168.2.196:7777
+		其中IP为目标板的IP，端口为调试端口
+		5. 可以调试
+		
+
+>>>>>>> 8467e96b934c41aa969190566fd35a35a6dba2bb
 + 知识点
 	+ `dd iflag=dsync oflag=dsync if=./E4412_D.bl1.bin of=$1 seek=$signed_bl1_position`：
 		1. 表示从if指定的位置，读取内容到缓冲区。然后写入到of指定的设备的seek偏移量的位置。
+
+	+ Ubuntu开机自启动
+		+ 针对当前用户有效(推荐)
+			1. 如果当前是普通用户，则环境变量只在普通用户登录时启动。
+			2. 如果当前是root用户，则环境变量只在root用户登录时启动。
+			3. 举例：
+				```C
+				1. sy@ubuntu:~$ su
+				2. root@ubuntu:/home/sy#
+				3. root@ubuntu:/home/sy# vim ~/.bashrc 
+				4. 添加环境变量...
+				5. root@ubuntu:/home/sy# source ~/.bashrc
+				6. root用户的环境变量设置完毕，只要切换到root，则该文件
+				都会重新执行一次 
+				```
+		+ 针对所有用户有效，但不包括root	
+			1. 举例：
+				```C
+				1. root@ubuntu:/home/sy# vim /etc/profile
+				2. 添加环境变量...
+				3. root@ubuntu:/home/sy# source /etc/profile
+				```
+		
 
 
