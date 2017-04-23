@@ -1009,7 +1009,12 @@
 				1. root@ubuntu:/home/sy# vim /etc/profile
 				2. 添加环境变量...
 				3. root@ubuntu:/home/sy# source /etc/profile
-				```
-		
+				```			
+	
+	+ Ubuntu 查找可执行文件位置
+		1. locate + filename
 
+	+ 反汇编文件
+		1. arm-linux-objdump -D -b binary -m arm + filename > 导出文件名
+		其中 -D：所有段 -m：架构 -b：二进制文件
 

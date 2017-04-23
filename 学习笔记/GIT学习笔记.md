@@ -32,9 +32,10 @@
 	+ 注意：创建远程地址，尽量使用HTTP地址，GIT地址经常挂掉，出现"fatal: Unable to look up github.com:dasuimao (port 9418) "错误。
 			
 + 常用命令	
-	+ push
-		+ 添加远端主机名
-			1. git remote add + "主机名" +"仓库"
+	+ 添加远端主机名
+		1. git remote add + "主机名" +"仓库"，例如：
+		git remote add origin https://github.com/dasuimao/U-BOOT-Tiny4412.git
+			
 	
 	+ 删除远端主机名
 		1. git remote rm + "主机名"
@@ -73,8 +74,14 @@
 		2. 删除标签： git tag -d tagName
 		3. 查看标签： git tag
 
-	+ git diff 
-		1. +filename，可以查看当前已经add的文件版本，和当前文件之间的差别。
+	+ diff  
+		1. git diff <commit> + filePath，可以查看已经提交的文件版本，和指定路径文件之间的差别。
+
+	+ reset 
+		1. git reset --hard + <commit>，用于回退到指定的版本
+		2. git reset --hard HEAD，用于回到上次的提交状态
+		3. git reset --hard HEAD^，回到上一个版本，^代表回退的次数
+		4. git reset --hard HEAD~n，回退n个版本
 
 + 过滤器
 	+ 忽略文件夹
