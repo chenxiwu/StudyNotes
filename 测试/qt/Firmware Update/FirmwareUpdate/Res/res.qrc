@@ -1,9 +1,0 @@
-<RCC>
-    <qresource prefix="/Res">
-        <file>About.ico</file>
-        <file>Document.ico</file>
-        <file>Open.ico</file>
-        <file>112.ico</file>
-        <file>favicon.ico</file>
-    </qresource>
-</RCC>

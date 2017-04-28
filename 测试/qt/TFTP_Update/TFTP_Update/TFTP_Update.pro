@@ -35,7 +35,8 @@ HEADERS  += mainwindow.h \
     crc16.h \
     dialogabout.h \
     tftp.h \
-    utils.h
+    utils.h \
+    dialogdebug.h
 
 FORMS    += mainwindow.ui \
     dialogabout.ui \
