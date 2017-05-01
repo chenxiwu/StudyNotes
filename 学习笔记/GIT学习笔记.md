@@ -75,7 +75,8 @@
 		3. 查看标签： git tag
 
 	+ diff  
-		1. git diff <commit> + filePath，可以查看已经提交的文件版本，和指定路径文件之间的差别。
+		1. git diff <commit> + file，可以查看已经提交的文件版本，和指定路径文件之间的差别。
+		2. git diff --no-index file1 file2，比较两个文件之间的差别
 
 	+ reset 
 		1. git reset --hard + <commit>，用于回退到指定的版本

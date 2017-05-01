@@ -60,7 +60,7 @@
 				写入到设备1已知是eMMC. 中，起始地址为0x2C0由于第三块需要占用空间253K，8+16+253=277K. ，写入大小0xB8(184)块。
 			11. 至此，数据写入完毕。输入emmc close 1，关闭设备。
 	
-+ 尝试移植U-BOOT
++ 移植旧版U-BOOT
 	> 在三星提供的源码基础上移植U-BOOT到友善之臂的Tiny4412开发板。文件名：`u-boot-samsung-dev.rar`
 	+ 移植步骤[带有mkconfig文件]：
 		1. 将文件`u-boot-samsung-dev.rar`拷贝到linux中
@@ -175,6 +175,7 @@
 		#49~16.04.1-Ubuntu SMP Fri Mar 31 14:50:48 UTC 2017 i686 i686 i686 GNU/Linux]
 		3. 编译器：友善之臂提供的编译器 arm-linux-gcc-4.5.1-v6-vfp-20120301.tgz
 		4. 开发板：Tiny4412/Super4412SDK 1506
+		5. 核心板：Tiny4412 1412
 	+ 下载U-BOOT
 		1. 到网站 ftp://ftp.denx.de/pub/u-boot/ ，下载最新版U-BOOT（u-boot-2017.03.tar.bz2）
 	+ 解压缩文件
@@ -1529,7 +1530,40 @@
 		```
 		3. U-BOOT 执行流程
 		```C
+		1. 前面的步骤和SPL中执行的都一样。
+		2. 执行到 bl	board_init_f时，查看文件`arch\arm\mach-exynos\Makefile`
+		
+		ifdef CONFIG_SPL_BUILD
+		obj-$(CONFIG_EXYNOS5)	+= clock_init_exynos5.o
+		obj-$(CONFIG_EXYNOS5)	+= dmc_common.o dmc_init_ddr3.o
+		obj-$(CONFIG_EXYNOS4210)+= dmc_init_exynos4.o clock_init_exynos4.o
+		obj-$(CONFIG_EXYNOS4412)+= dmc_init_exynos4412.o clock_init_exynos4412.o
+		obj-y	+= spl_boot.o tzpc.o
+		obj-y	+= lowlevel_init.o
+		endif
 
+		当执行U-BOOT时，这些文件都不会被编译。因此，执行到`common\board_f.c`时，
+		会跳转到void board_init_f(ulong boot_flags)函数。
+		3. 紧接着：
+		if (initcall_run_list(init_sequence_f))
+			hang();
+		init_sequence_f是一个函数指针数组，initcall_run_list()函数会依次遍历
+		数组中的每一个元素，并执行。正常情况下不会执行到hang()，而数组的最后一个
+		元素为 NULL，作为退出条件：
+		for (init_fnc_ptr = init_sequence; *init_fnc_ptr; ++init_fnc_ptr);
+		4. b	relocate_code
+		5. bl	relocate_vectors
+		6. bl coloured_LED_init
+		7. bl red_led_on
+		8. ldr	pc, =board_init_r 执行`common\Board_r.c`中的
+		void board_init_r(gd_t *new_gd, ulong dest_addr);
+		9. 执行：
+		if (initcall_run_list(init_sequence_r))
+			hang();
+		init_sequence_r是一个函数指针数组，最后一个成员是 run_main_loop()
+		10. 执行 void main_loop(void);
+		11. 执行 void cli_loop(void);
+		12. 执行 cli_simple_loop();
 		```
 	
 	+ 问题
@@ -1736,10 +1770,690 @@
 
 		+ 代码分析：
 		```C
+		修改文件：arch/arm/mach-exynos/exynos4412_setup.h
+
+		root@ubuntu:/opt/u-boot-2017.03# git diff ../temp/
+		u-boot-2017.03/arch/arm/mach-exynos/exynos4_setup.h 
+		arch/arm/mach-exynos/exynos4412_setup.h 
+		diff --git a/../temp/u-boot-2017.03/arch/arm/mach-exynos/
+		exynos4_setup.h b/arch/arm/mach-exynos/exynos4412_setup.h
+		index 9f29d94..3befa95 100644
+		--- a/../temp/u-boot-2017.03/arch/arm/mach-exynos/exynos4_setup.h
+		+++ b/arch/arm/mach-exynos/exynos4412_setup.h
+		@@ -6,8 +6,8 @@
+		  * SPDX-License-Identifier:    GPL-2.0+
+		  */
+		 
+		-#ifndef _ORIGEN_SETUP_H
+		-#define _ORIGEN_SETUP_H
+		+#ifndef _EXYNOS4412_SETUP_H
+		+#define _EXYNOS4412_SETUP_H
+		 
+		 #include <config.h>
+		 #include <asm/arch/cpu.h>
+		@@ -434,7 +434,7 @@ struct mem_timings {
+		 #define ABP_SFR_SLV1_SINGLE_ADDRMAP_START_OFFSET       0x828
+		 #define ABP_SFR_SLV1_SINGLE_ADDRMAP_END_OFFSET 0x830
+		 
+		-#ifdef CONFIG_ORIGEN
+		+#ifdef CONFIG_TINY4412
+		 /* Interleave: 2Bit, Interleave_bit1: 0x15, Interleave_bit0: 0x7 */
+		 #define APB_SFR_INTERLEAVE_CONF_VAL    0x20001507
+		 #define APB_SFR_ARBRITATION_CONF_VAL   0x00000001
+		@@ -470,10 +470,10 @@ struct mem_timings {
+		 #define CTRL_ZQ_MODE_NOTERM    (0x1 << 0)
+		 #define CTRL_ZQ_START          (0x1 << 1)
+		 #define CTRL_ZQ_DIV            (0 << 4)
+		-#define CTRL_ZQ_MODE_DDS       (0x7 << 8)
+		-#define CTRL_ZQ_MODE_TERM      (0x2 << 11)
+		+#define CTRL_ZQ_MODE_DDS       (0x4 << 8)
+		+#define CTRL_ZQ_MODE_TERM      (0x1 << 11)
+		 #define CTRL_ZQ_FORCE_IMPN     (0x5 << 14)
+		-#define CTRL_ZQ_FORCE_IMPP     (0x6 << 17)
+		+#define CTRL_ZQ_FORCE_IMPP     (0x2 << 17)
+		 #define CTRL_DCC               (0xE38 << 20)
+		 #define ZQ_CONTROL_VAL         (CTRL_ZQ_MODE_NOTERM | CTRL_ZQ_START\
+		                                | CTRL_ZQ_DIV | CTRL_ZQ_MODE_DDS\
+		@@ -506,7 +506,7 @@ struct mem_timings {
+		 #define ADD_LAT_PALL           (1 << 6)
+		 #define MEM_TYPE_DDR3          (0x6 << 8)
+		 #define MEM_WIDTH_32           (0x2 << 12)
+		-#define NUM_CHIP_2             (1 << 16)
+		+#define NUM_CHIP_2             (0 << 16)
+		 #define BL_8                   (0x3 << 20)
+		 #define MEMCONTROL_VAL         (CLK_STOP_DISABLE | DPWRDN_DISABLE\
+		                                | DPWRDN_TYPE | TP_DISABLE | DSREF_DIABLE\
+		@@ -515,20 +515,20 @@ struct mem_timings {
+		 
+		 
+		 
+		 #define CHIP_BANK_8            (0x3 << 0)
+		-#define CHIP_ROW_14            (0x2 << 4)
+		+#define CHIP_ROW_15            (0x3 << 4)
+		 #define CHIP_COL_10            (0x3 << 8)
+		 #define CHIP_MAP_INTERLEAVED   (1 << 12)
+		-#define CHIP_MASK              (0xe0 << 16)
+		+#define CHIP_MASK              (0xC0 << 16)
+		 #ifdef CONFIG_MIU_LINEAR
+		 #define CHIP0_BASE             (0x40 << 24)
+		 #define CHIP1_BASE             (0x60 << 24)
+		 #else
+		-#define CHIP0_BASE             (0x20 << 24)
+		-#define CHIP1_BASE             (0x40 << 24)
+		+#define CHIP0_BASE             (0x40 << 24)
+		+#define CHIP1_BASE             (0x80 << 24)
+		 #endif
+		-#define MEMCONFIG0_VAL         (CHIP_BANK_8 | CHIP_ROW_14 | CHIP_COL_10\
+		+#define MEMCONFIG0_VAL         (CHIP_BANK_8 | CHIP_ROW_15 | CHIP_COL_10\
+		                                | CHIP_MAP_INTERLEAVED | CHIP_MASK | CHIP0_BASE)
+		-#define MEMCONFIG1_VAL         (CHIP_BANK_8 | CHIP_ROW_14 | CHIP_COL_10\
+		+#define MEMCONFIG1_VAL         (CHIP_BANK_8 | CHIP_ROW_15 | CHIP_COL_10\
+		                                | CHIP_MAP_INTERLEAVED | CHIP_MASK | CHIP1_BASE)
+		 
+		 #define TP_CNT                 (0xff << 24)
+		@@ -556,11 +556,11 @@ struct mem_timings {
+		 
+		 #define CONTROL2_VAL           0x00000000
+		 
+		-#ifdef CONFIG_ORIGEN
+		-#define TIMINGREF_VAL          0x000000BB
+		-#define TIMINGROW_VAL          0x4046654f
+		-#define        TIMINGDATA_VAL          0x46400506
+		-#define        TIMINGPOWER_VAL         0x52000A3C
+		+#ifdef CONFIG_TINY4412
+		+       #define TIMINGREF_VAL           0x000000BB
+		+       #define TIMINGROW_VAL           0x6946654f
+		+       #define TIMINGDATA_VAL          0x46460506
+		+       #define TIMINGPOWER_VAL         0x5200183c
+		 #else
+		 #define TIMINGREF_VAL          0x000000BC
+		 #ifdef DRAM_CLK_330
+		(END)
+
+
+
+		修改文件：/arch/arm/mach-exynos/dmc_init_exynos4412.c
 		
-		```
+		root@ubuntu:/opt/u-boot-2017.03# git diff ../temp/u-
+		boot-2017.03/arch/arm/mach-exynos/dmc_init_exynos4.c 
+		arch/arm/mach-exynos/dmc_init_exynos4412.c       
+		diff --git a/../temp/u-boot-2017.03/arch/arm/mach-exynos/
+		dmc_init_exynos4.c b/arch/arm/mach-exynos/dmc_init_exynos4412.c
+		index ecddc72..938348a 100644
+		--- a/../temp/u-boot-2017.03/arch/arm/mach-exynos/dmc_init_exynos4.c
+		+++ b/arch/arm/mach-exynos/dmc_init_exynos4412.c
+		@@ -1,5 +1,5 @@
+		 /*
+		- * Memory setup for board based on EXYNOS4210
+		+ * Memory setup for board based on EXYNOS4412
+		  *
+		  * Copyright (C) 2013 Samsung Electronics
+		  * Rajeshwari Shinde <rajeshwari.s@samsung.com>
+		@@ -26,7 +26,8 @@
+		 #include <config.h>
+		 #include <asm/arch/dmc.h>
+		 #include "common_setup.h"
+		-#include "exynos4_setup.h"
+		+#include <debug_uart.h>
+		+#include "exynos4412_setup.h"
+		 
+		 struct mem_timings mem = {
+		        .direct_cmd_msr = {
+		@@ -124,6 +125,10 @@ static void dmc_init(struct exynos4_dmc *dmc)
+		        writel(mem.memconfig0, &dmc->memconfig0);
+		        writel(mem.memconfig1, &dmc->memconfig1);
+		 
+		+#ifdef CONFIG_TINY4412
+		+       writel(0x8000001f, &dmc->ivcontrol);
+		+#endif 
+		+
+		        /* Config Precharge Policy */
+		        writel(mem.prechconfig, &dmc->prechconfig);
+		        /*
+		@@ -175,39 +180,106 @@ void mem_ctrl_init(int reset)
+		         * 0: full_sync
+		         */
+		        writel(1, ASYNC_CONFIG);
+		-#ifdef CONFIG_ORIGEN
+		-       /* Interleave: 2Bit, Interleave_bit1: 0x15, Interleave_bit0: 0x7 */
+		-       writel(APB_SFR_INTERLEAVE_CONF_VAL, EXYNOS4_MIU_BASE +
+		-               APB_SFR_INTERLEAVE_CONF_OFFSET);
+		-       /* Update MIU Configuration */
+		-       writel(APB_SFR_ARBRITATION_CONF_VAL, EXYNOS4_MIU_BASE +
+		-               APB_SFR_ARBRITATION_CONF_OFFSET);
+		-#else
+		-       writel(APB_SFR_INTERLEAVE_CONF_VAL, EXYNOS4_MIU_BASE +
+		-               APB_SFR_INTERLEAVE_CONF_OFFSET);
+		-       writel(INTERLEAVE_ADDR_MAP_START_ADDR, EXYNOS4_MIU_BASE +
+		-               ABP_SFR_INTERLEAVE_ADDRMAP_START_OFFSET);
+		-       writel(INTERLEAVE_ADDR_MAP_END_ADDR, EXYNOS4_MIU_BASE +
+		-               ABP_SFR_INTERLEAVE_ADDRMAP_END_OFFSET);
+		-       writel(INTERLEAVE_ADDR_MAP_EN, EXYNOS4_MIU_BASE +
+		-               ABP_SFR_SLV_ADDRMAP_CONF_OFFSET);
+		-#ifdef CONFIG_MIU_LINEAR
+		-       writel(SLAVE0_SINGLE_ADDR_MAP_START_ADDR, EXYNOS4_MIU_BASE +
+		-               ABP_SFR_SLV0_SINGLE_ADDRMAP_START_OFFSET);
+		-       writel(SLAVE0_SINGLE_ADDR_MAP_END_ADDR, EXYNOS4_MIU_BASE +
+		-               ABP_SFR_SLV0_SINGLE_ADDRMAP_END_OFFSET);
+		-       writel(SLAVE1_SINGLE_ADDR_MAP_START_ADDR, EXYNOS4_MIU_BASE +
+		-               ABP_SFR_SLV1_SINGLE_ADDRMAP_START_OFFSET);
+		-       writel(SLAVE1_SINGLE_ADDR_MAP_END_ADDR, EXYNOS4_MIU_BASE +
+		-               ABP_SFR_SLV1_SINGLE_ADDRMAP_END_OFFSET);
+		-       writel(APB_SFR_SLV_ADDR_MAP_CONF_VAL, EXYNOS4_MIU_BASE +
+		-               ABP_SFR_SLV_ADDRMAP_CONF_OFFSET);
+		-#endif
+		+
+		+#ifndef CONFIG_TINY4412        
+		+       #ifdef CONFIG_ORIGEN
+		+               /* Interleave: 2Bit, Interleave_bit1: 0x15, Interleave_bit0: 0x7 */
+		+               writel(APB_SFR_INTERLEAVE_CONF_VAL, EXYNOS4_MIU_BASE +
+		+                       APB_SFR_INTERLEAVE_CONF_OFFSET);
+		+               /* Update MIU Configuration */
+		+               writel(APB_SFR_ARBRITATION_CONF_VAL, EXYNOS4_MIU_BASE +
+		+                       APB_SFR_ARBRITATION_CONF_OFFSET);
+		+       #else
+		+               writel(APB_SFR_INTERLEAVE_CONF_VAL, EXYNOS4_MIU_BASE +
+		+                       APB_SFR_INTERLEAVE_CONF_OFFSET);
+		+               writel(INTERLEAVE_ADDR_MAP_START_ADDR, EXYNOS4_MIU_BASE +
+		+                       ABP_SFR_INTERLEAVE_ADDRMAP_START_OFFSET);
+		+               writel(INTERLEAVE_ADDR_MAP_END_ADDR, EXYNOS4_MIU_BASE +
+		+                       ABP_SFR_INTERLEAVE_ADDRMAP_END_OFFSET);
+		+               writel(INTERLEAVE_ADDR_MAP_EN, EXYNOS4_MIU_BASE +
+		+                       ABP_SFR_SLV_ADDRMAP_CONF_OFFSET);       
+		+               #ifdef CONFIG_MIU_LINEAR
+		+                       writel(SLAVE0_SINGLE_ADDR_MAP_START_ADDR, EXYNOS4_MIU_BASE +
+		+                               ABP_SFR_SLV0_SINGLE_ADDRMAP_START_OFFSET);
+		+                       writel(SLAVE0_SINGLE_ADDR_MAP_END_ADDR, EXYNOS4_MIU_BASE +
+		+                               ABP_SFR_SLV0_SINGLE_ADDRMAP_END_OFFSET);
+		+                       writel(SLAVE1_SINGLE_ADDR_MAP_START_ADDR, EXYNOS4_MIU_BASE +
+		+                               ABP_SFR_SLV1_SINGLE_ADDRMAP_START_OFFSET);
+		+                       writel(SLAVE1_SINGLE_ADDR_MAP_END_ADDR, EXYNOS4_MIU_BASE +
+		+                               ABP_SFR_SLV1_SINGLE_ADDRMAP_END_OFFSET);
+		+                       writel(APB_SFR_SLV_ADDR_MAP_CONF_VAL, EXYNOS4_MIU_BASE +
+		+                               ABP_SFR_SLV_ADDRMAP_CONF_OFFSET);
+		+               #endif
+		+       #endif
+		 #endif
+		-       /* DREX0 */
+		+       
+		+       printascii("[SPL] DDR3 SDRAM配置：\n");
+		+       printascii("timingref   ");  printhex8(mem.timingref);          printascii("\n");
+		+       printascii("timingrow   ");  printhex8(mem.timingrow);          printascii("\n");
+		+       printascii("timingdata  ");  printhex8(mem.timingdata);         printascii("\n");
+		+       printascii("timingpower ");  printhex8(mem.timingpower);        printascii("\n");
+		+       printascii("zqcontrol   ");  printhex8(mem.zqcontrol);          printascii("\n");
+		+       printascii("control0    ");  printhex8(mem.control0);           printascii("\n");
+		+       printascii("control1    ");  printhex8(mem.control1);           printascii("\n");
+		+       printascii("control2    ");  printhex8(mem.control2);           printascii("\n");
+		+       printascii("concontrol  ");  printhex8(mem.concontrol);         printascii("\n");
+		+       printascii("prechconfig ");  printhex8(mem.prechconfig);        printascii("\n");
+		+       printascii("memcontrol  ");  printhex8(mem.memcontrol);         printascii("\n");
+		+       printascii("memconfig0  ");  printhex8(mem.memconfig0);         printascii("\n");
+		+       printascii("memconfig1  ");  printhex8(mem.memconfig1);         printascii("\n");
+		+       printascii("dll_resync  ");  printhex8(mem.dll_resync);         printascii("\n");
+		+       printascii("dll_on      ");  printhex8(mem.dll_on);             printascii("\n");       
+		+
+		+       /* DMC0 */
+		        dmc = (struct exynos4_dmc *)samsung_get_base_dmc_ctrl();
+		        dmc_init(dmc);
+		+       
+		+       /* DMC1 */
+		        dmc = (struct exynos4_dmc *)(samsung_get_base_dmc_ctrl()
+		                                        + DMC_OFFSET);
+		        dmc_init(dmc);
+		+       
+		+{
+		+       printascii("[SPL] DDR3 SDRAM测试：\n");
+		+       
+		+       void Test_SDRAM(unsigned long addr, unsigned long value);
+		+       Test_SDRAM(0x40000000, 0x12121212);
+		+       Test_SDRAM(0x40000004, 0x12121213);
+		+       Test_SDRAM(0x40000008, 0x12121214);
+		+       Test_SDRAM(0x4000000C, 0x12121215);
+		+       Test_SDRAM(0x40000010, 0x12121216);
+		+
+		+       Test_SDRAM(0x41000000, 0x23232325);
+		+       Test_SDRAM(0x42000000, 0x23232326);
+		+               
+		+       Test_SDRAM(0x42345530, 0x23232323);
+		+       Test_SDRAM(0x42345534, 0x23232324);
+		+       Test_SDRAM(0x42345538, 0x23232325);
+		+       Test_SDRAM(0x4234553C, 0x23232326);
+		+       Test_SDRAM(0x50000000, 0x34343434);
+		+       Test_SDRAM(0x58494940, 0x45454545);
+		+       Test_SDRAM(0x60000008, 0x56565656);
+		+       Test_SDRAM(0x6FFFFFFC, 0x67676767);
+		+       Test_SDRAM(0x70000000, 0x78787878);
+		+       Test_SDRAM(0x7FFFFFFC, 0x89898989);
+		+       
+		+       printascii("测试结束\n");
+		+}      
+		 }
+		+
+		+void Test_SDRAM(unsigned long addr, unsigned long value)
+		+{
+		+       
+		+       printascii("写入地址 = ");
+		+       printhex8(addr);
+		+       
+		+       printascii("  写入值 = ");
+		+       printhex8(value);
+		+       writel(value, addr);
+		+       
+		+       printascii("  读取值 = ");
+		+       printhex8(readl(addr));
+		+       printascii("\n");
+		+}
+		+
+		+
+		(END)
+
+		测试结果：
+		[SPL] DDR3 SDRAM配置：
+
+		timingref   000000bb
 		
-	
+		timingrow   6946654f
+		
+		timingdata  46460506
+		
+		timingpower 5200183c
+		
+		zqcontrol   e3854c03
+		
+		control0    71101008
+		
+		control1    e0000086
+		
+		control2    00000000
+		
+		concontrol  0fff301a
+		
+		prechconfig ff000000
+		
+		memcontrol  00302640
+		
+		memconfig0  40c01333
+		
+		memconfig1  80c01333
+		
+		dll_resync  00000003
+		
+		dll_on      00000001
+		
+		[SPL] DDR3 SDRAM测试：
+		
+		写入地址 = 40000000  写入值 = 12121212  读取值 = 12121212
+		
+		写入地址 = 40000004  写入值 = 12121213  读取值 = 12121213
+		
+		写入地址 = 40000008  写入值 = 12121214  读取值 = 12121214
+		
+		写入地址 = 4000000c  写入值 = 12121215  读取值 = 12121215
+		
+		写入地址 = 40000010  写入值 = 12121216  读取值 = 12121216
+		
+		写入地址 = 41000000  写入值 = 23232325  读取值 = 23232325
+		
+		写入地址 = 42000000  写入值 = 23232326  读取值 = 23232326
+		
+		写入地址 = 42345530  写入值 = 23232323  读取值 = 23232323
+		
+		写入地址 = 42345534  写入值 = 23232324  读取值 = 23232324
+		
+		写入地址 = 42345538  写入值 = 23232325  读取值 = 23232325
+		
+		写入地址 = 4234553c  写入值 = 23232326  读取值 = 23232326
+		
+		写入地址 = 50000000  写入值 = 34343434  读取值 = 34343434
+		
+		写入地址 = 58494940  写入值 = 45454545  读取值 = 45454545
+		
+		写入地址 = 60000008  写入值 = 56565656  读取值 = 56565656
+		
+		写入地址 = 6ffffffc  写入值 = 67676767  读取值 = 67676767
+		
+		写入地址 = 70000000  写入值 = 78787878  读取值 = 78787878
+		
+		写入地址 = 7ffffffc  写入值 = 89898989  读取值 = 89898989
+		
+		测试结束
+		```		
+	+ 将U-BOOT.bin从SD卡拷贝到DDR3 SDRAM
+	```C
+		注意：
+		参考"Android_Exynos4412_iROM_Secure_Booting_Guide_Ver.1.00.00.pdf"
+		Warning: The frequency of clocks supplied to SDMMC and 
+		eMMC are 20Mhz at the Booting time. MPLL is thesource of these clocks
+		因此，根据原理图可以得知，开发板使用SDMMC2,因此，需要设置SDMMC2的时钟为
+		20MHz。
+		由于调用函数 tzpc_init(); 因此，需要烧录 #<TrustZone S/W fusing> 程序段。
+		
+		代码如下：
+		root@ubuntu:/opt/u-boot-2017.03# git diff 565d 1071 diff --git a/arch/arm/mach-exynos/clock_init_exynos4412.c b/arch/arm mach-exynos/clock_init_exynos4412.c
+		index d1b4de5..b07fb2d 100644
+		--- a/arch/arm/mach-exynos/clock_init_exynos4412.c
+		+++ b/arch/arm/mach-exynos/clock_init_exynos4412.c
+		@@ -298,9 +298,9 @@ void system_clock_init(void)
+		         * DOUTmmc3 = MOUTmmc3 / (ratio + 1) = 100 (7)
+		         * sclk_mmc3 = DOUTmmc3 / (ratio + 1) = 50 (1)
+		         * DOUTmmc2 = MOUTmmc2 / (ratio + 1) = 100 (7)
+		-        * sclk_mmc2 = DOUTmmc2 / (ratio + 1) = 50 (1)
+		+        * sclk_mmc2 = DOUTmmc2 / (ratio + 1) = 20 (4)
+		        */
+		-   set = MMC2_RATIO(7) | MMC2_PRE_RATIO(1) | MMC3_RATIO(7) |
+		+   set = MMC2_RATIO(7) | MMC2_PRE_RATIO(4) | MMC3_RATIO(7) |
+		              MMC3_PRE_RATIO(1);
+		 
+		    clrsetbits_le32(&clk->div_fsys2, clr, set);
+		diff --git a/arch/arm/mach-exynos/lowlevel_init.c b/arch/arm/mach-exynos/lowlevel_init.c
+		index 3dd4645..596f6a7 100644
+		--- a/arch/arm/mach-exynos/lowlevel_init.c
+		+++ b/arch/arm/mach-exynos/lowlevel_init.c
+		@@ -224,7 +224,7 @@ int do_lowlevel_init(void)
+		 #endif
+		 #endif
+		                mem_ctrl_init(actions & DO_MEM_RESET);
+		-               tzpc_init();
+		+               /* tzpc_init(); */ 
+		        }
+		 
+		        return actions & DO_WAKEUP;
+		diff --git a/include/configs/tiny4412.h b/include/configs/tiny4412.h
+		index f65affc..081d1b5 100644
+		--- a/include/configs/tiny4412.h
+		+++ b/include/configs/tiny4412.h
+		@@ -96,15 +96,26 @@
+		 
+		 #define CONFIG_CLK_1000_400_200
+		 
+		-/* MIU (Memory Interleaving Unit) */
+		 #define CONFIG_MIU_2BIT_21_7_INTERLEAVED
+		 
+		+/*
+		+ *    SD MMC layout:
+		+ *    +------------+------------------------------------------------------------+
+		+ *    |                                                                         |
+		+ *    |            |            |               |              |                |
+		+ *    |   512B     |   8K(bl1)  |    16k(bl2)   |   16k(ENV)   |  512k(u-boot)  |
+		+ *    |            |            |               |              |                |
+		+ *    |                                                                         |
+		+ *    +------------+------------------------------------------------------------+
+		+ *
+		+ */
+		 #define CONFIG_ENV_IS_IN_MMC
+		-#define CONFIG_SYS_MMC_ENV_DEV         0
+		+#define CONFIG_SYS_MMC_ENV_DEV 0
+		 #define CONFIG_ENV_SIZE                        (16 << 10)      /* 16 KB */
+		 #define RESERVE_BLOCK_SIZE             (512)
+		-#define BL1_SIZE                       (8 << 10) /* 8K reserved for BL1*/
+		-#define CONFIG_ENV_OFFSET              (RESERVE_BLOCK_SIZE + BL1_SIZE)
+		+#define BL1_SIZE                               (8 << 10)       /* 8K reserved for BL1*/
+		+#define BL2_SIZE                               (16 << 10)      /* 16K reserved for BL2 */
+		+#define CONFIG_ENV_OFFSET              (RESERVE_BLOCK_SIZE + BL1_SIZE + BL2_SIZE)
+		 
+		 #define CONFIG_SPL_LDSCRIPT    "board/samsung/common/exynos-uboot-spl.lds"
+		 #define CONFIG_SPL_MAX_FOOTPRINT       (14 * 1024)
+		@@ -116,3 +127,6 @@
+		 #define BL2_START_OFFSET       ((CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)/512)
+		 #define BL2_SIZE_BLOC_COUNT    (COPY_BL2_SIZE/512)
+		 #endif /* __CONFIG_H */
+		+
+		+
+		+
+		diff --git a/sd_fuse/tiny4412/sd_fusing.sh b/sd_fuse/tiny4412/sd_fusing.sh
+		index f210d2f..bedf4d4 100755
+		--- a/sd_fuse/tiny4412/sd_fusing.sh
+		+++ b/sd_fuse/tiny4412/sd_fusing.sh
+		@@ -62,8 +62,8 @@ ${MKBL2} ${E4412_UBOOT} bl2.bin 14336
+		 
+		 signed_bl1_position=1
+		 bl2_position=17
+		-uboot_position=49
+		-tzsw_position=705
+		+uboot_position=81
+		+tzsw_position=1105
+		 
+		 #<BL1 fusing>
+		 echo "---------------------------------------"
+		@@ -82,9 +82,9 @@ echo "u-boot fusing"
+		 dd iflag=dsync oflag=dsync if=${E4412_UBOOT} of=$1 seek=$uboot_position
+		 
+		 #<TrustZone S/W fusing>
+		-#echo "---------------------------------------"
+		-#echo "TrustZone S/W fusing"
+		-#dd iflag=dsync oflag=dsync if=./E4412_tzsw.bin of=$1 seek=$tzsw_position
+		+echo "---------------------------------------"
+		+echo "TrustZone S/W fusing"
+		+dd iflag=dsync oflag=dsync if=./E4412_tzsw.bin of=$1 seek=$tzsw_position
+		 
+		 #<flush to disk>
+		 sync
+		(END)
+		
+
+		打印输出：
+		
+		U-Boot 2017.03-g1071979-dirty (Apr 28 2017 - 18:23:36 -0700) for TINY4412
+		
+		
+		
+		CPU:   Exynos4412 @ 1.4 GHz
+		
+		Model: Tiny4412 based on Exynos4412
+		
+		Board: Tiny4412 based on Exynos4412
+		
+		DRAM:  1 GiB
+		
+		WARNING: Caches not enabled
+		
+		MMC:   process_nodes: failed to decode dev 0 (-22)
+		
+		process_nodes: failed to decode dev 1 (-22)
+		
+		process_nodes: failed to decode dev 2 (-22)
+		
+		process_nodes: failed to decode dev 3 (-22)
+		
+		DWMMC56: Can't get the dev index
+		
+		exynos_dwmci_process_node: failed to decode dev 0
+		
+		
+		
+		MMC Device 0 not found
+		
+		*** Warning - No MMC card found, using default environment
+		
+		
+		
+		Hit any key to stop autoboot:  0 
+		
+		No MMC device available
+		
+		MMC Device 0 not found
+		
+		MMC Device 0 not found
+		
+		** Bad device mmc 0 **
+		
+		Wrong Image Format for bootm command
+		
+		ERROR: can't get kernel image!
+		
+		TINY4412# 
+	```
+
 	+ TZSZ
-		+ tzsz现在放置在SD的705块位置，可能在拷贝tzsz时，将uboot覆盖掉。导致UBOOT出现错误
+		+ 在文件sd_fusing.c中，tzsz现在放置在SD的705块位置，可能在拷贝tzsz时，将uboot覆盖掉。导致UBOOT出现错误。
+		+ 必须关掉 tzpc_init()，否则从SPL跳转到UBOOT执行时死机。
 	
+	+ DEBUG输出
+		+ 参考：http://blog.csdn.net/ooonebook/article/details/53313112?utm_source=itdadao&utm_medium=referral
+		+ 代码如下：
+		```C
+		root@ubuntu:/opt/u-boot-2017.03# git diff 107197 304c30
+		diff --git a/arch/arm/dts/exynos4412-tiny4412.dts b/arch/arm/dts/exynos4412-tiny4412.dts
+		index 9307c0b..2595016 100644
+		--- a/arch/arm/dts/exynos4412-tiny4412.dts
+		+++ b/arch/arm/dts/exynos4412-tiny4412.dts
+		@@ -23,8 +23,5 @@
+		                console = "/serial@13800000";
+		        };
+		 
+		-       serial0:serial@13810000 {
+		-               status = "okay";
+		-       };
+		 
+		 };
+		diff --git a/arch/arm/lib/crt0.S b/arch/arm/lib/crt0.S
+		index 0ee02e5..2cb27a2 100644
+		--- a/arch/arm/lib/crt0.S
+		+++ b/arch/arm/lib/crt0.S
+		@@ -94,9 +94,14 @@ ENTRY(_main)
+		 
+		        bl led_on_3
+		 
+		+       bl bsp_delay
+		+       bl led_off_all
+		+
+		        mov     r0, #0
+		        bl      board_init_f
+		 
+		+       bl led_on_1
+		+
+		 #if ! defined(CONFIG_SPL_BUILD)
+		 
+		 /*
+		diff --git a/arch/arm/mach-exynos/lowlevel_init.c b/arch/arm/mach-exynos/lowlevel_init.c
+		index 596f6a7..bc2b24c 100644
+		--- a/arch/arm/mach-exynos/lowlevel_init.c
+		+++ b/arch/arm/mach-exynos/lowlevel_init.c
+		@@ -224,8 +224,7 @@ int do_lowlevel_init(void)
+		 #endif
+		 #endif
+		                mem_ctrl_init(actions & DO_MEM_RESET);
+		-               tzpc_init(); 
+		+/*             tzpc_init();  */
+		        }
+		-
+		        return actions & DO_WAKEUP;
+		 }
+		diff --git a/include/configs/tiny4412.h b/include/configs/tiny4412.h
+		index 081d1b5..420e718 100644
+		--- a/include/configs/tiny4412.h
+		+++ b/include/configs/tiny4412.h
+		@@ -16,13 +16,18 @@
+		 #define CONFIG_TINY4412                        1        /* working with TINY4412 */
+		 
+		 /* DEBUG UART */
+		-#define CONFIG_DEBUG_UART                      1       
+		-#define CONFIG_SPL_SERIAL_SUPPORT      1
+		-#define CONFIG_SPL_GPIO_SUPPORT                1
+		-#define CONFIG_DEBUG_UART_S5P          1
+		-#define CONFIG_DEBUG_UART_BASE         0x13800000
+		-#define CONFIG_DEBUG_UART_CLOCK                (100000000)
+		-
+		+#if ! defined(CONFIG_SPL_BUILD)
+		+       /* U-BOOT阶段调试输出 */
+		+       #define DEBUG
+		+#else
+		+       /* SPL阶段调试输出 */
+		+       #define CONFIG_DEBUG_UART                       1 
+		+       #define CONFIG_SPL_SERIAL_SUPPORT       1
+		+       #define CONFIG_SPL_GPIO_SUPPORT         1
+		+       #define CONFIG_DEBUG_UART_S5P           1
+		+       #define CONFIG_DEBUG_UART_BASE          0x13800000
+		+       #define CONFIG_DEBUG_UART_CLOCK         (100000000)
+		+#endif
+		 
+		 #define CONFIG_SYS_DCACHE_OFF          1
+		 
+		(END)
+		```
+	+ 执行board_init_f详细步骤
+		```C
+		通过观察输出日志信息：
+		1. int board_early_init_f(void); 
+			-> static int board_uart_init(void);
+			-> int exynos_early_init_f(void);
+		2. int timer_init(void);
+		3. int serial_init(void);
+		4. int serial_init(void);
+		5. int console_init_f(void);、
+			-> gd->have_console = 1;
+			-> void putc(const char c);
+				-> 见下方：
+				if (!gd->have_console)
+				return pre_console_putc(c);
+		
+				if (gd->flags & GD_FLG_DEVINIT) {
+					/* Send to the standard output */
+					fputc(stdout, c);
+				} else {
+					/* Send directly to the handler */
+					pre_console_putc(c);
+					serial_putc(c);
+				} 
+				因为 GD_FLG_DEVINIT 标识在 int console_init_r(void);被置位，
+				因此，执行 serial_putc(c);
+					-> get_current()->putc(c);
+					在 drivers\serial\Makefile 中，找到 obj-$(CONFIG_S5P) += serial_s5p.o
+					而在文件 `include\configs\Exynos-common.h`找到
+					#define CONFIG_S5P			/* S5P Family */
+					因此，在 serial_s5p.c 中找到：
+					static const struct dm_serial_ops s5p_serial_ops = {
+						.putc = s5p_serial_putc,
+						.pending = s5p_serial_pending,
+						.getc = s5p_serial_getc,
+						.setbrg = s5p_serial_setbrg,
+					};
+					最终，将执行 static int s5p_serial_putc(struct udevice *dev, const char ch);将数据发出去。
+			-> 执行完本函数后，使用控制台将可以打印输出调试信息!!!
+		6. int display_options (void);
+			-> 打印：U-Boot 2017.03-g304c30b-dirty (Apr 30 2017 - 02:52:27 -0700) for TINY4412
+		7. static int display_text_info(void);
+			-> 打印：U-Boot code: 43E00000 -> 43E572A0  BSS: -> 43E8F884
+		8. int print_cpuinfo(void);
+			-> 打印：CPU:   Exynos4412 @ 1.4 GHz
+		9. int __weak show_board_info(void);
+			-> 打印：Model: Tiny4412 based on Exynos4412 
+				Board: Tiny4412 based on Exynos4412
+		10. int dram_init(void);
+		11. static int setup_dest_addr(void);
+			-> gd->ram_size = 0x4000 0000;
+			-> gd->ram_top = 0x8000 0000 - 0x10 0000;[1024MB - 1MB]
+			-> gd->relocaddr = gd->ram_top = 0x7FF0 0000;
+		12. static int reserve_round_4k(void); gd->relocaddr进行4K字节对齐
+		13. static int reserve_mmu(void)；
+		14. static int reserve_uboot(void);
+			-> gd->start_addr_sp = gd->relocaddr = 0x7FE5 C000;
+		15. static int reserve_malloc(void);
+			-> gd->start_addr_sp = gd->start_addr_sp - TOTAL_MALLOC_LEN;
+			-> TOTAL_MALLOC_LEN = 81936KB;
+		16. static int reserve_board(void);
+			-> gd->start_addr_sp -= sizeof(bd_t);
+			-> sizeof(bd_t) = 104B
+		17. static int setup_machine(void);
+			-> #define MACH_TYPE_TINY4412             4608
+		18. static int reserve_global_data(void);
+			-> gd->start_addr_sp -= sizeof(gd_t);
+				-> Reserving 192 Bytes for Global Data at: 7ae5bed8
+		19. static int reserve_fdt(void);
+			-> gd->start_addr_sp -= gd->fdt_size;
+				-> Reserving 12864 Bytes for FDT at: 7ae58c98
+		20. __weak int reserve_arch(void);
+		21. static int reserve_stacks(void);
+		22. static int setup_dram_config(void);
+			-> void dram_init_banksize(void);
+		23. static int show_dram_config(void);
+		24. static int display_new_sp(void);
+		25. static int reloc_fdt(void);
+		26. static int setup_reloc(void);
+			-> Relocating to 7fe60000, new gd at 7ae5bed8, sp at 7ae58c70
+		```
+	+ 执行board_init_r详细步骤
+	```C
+	
+	```
